@@ -70,10 +70,11 @@ class Player(object):
         return self.config["target_model_update_interval"]
 
     def reset(self):
+        self.logger.info("Player resets")
         self.num_steps_played_in_episode = 0
         self.episode_discounted_reward = 0
 
-        observation = self.env.reset()
+        observation, *_ = self.env.reset()
         self.state = None
         self.transition(observation)
 
@@ -87,6 +88,7 @@ class Player(object):
             self.logger.debug("Returning a random action")
             return self.env.action_space.sample()
         else:
+            self.logger.debug(f"Applying prediction model in action selection")
             with torch.no_grad():
                 action_values = self.prediction_model(self.state)
             self.logger.debug(f"State action values: {action_values}")
@@ -101,7 +103,8 @@ class Player(object):
         action = self.get_action()
         self.logger.info(f"Taking action: {action}")
 
-        observation, reward, terminated, _ = self.env.step(action)
+        observation, reward, terminated, truncated, *_ = self.env.step(action)
+        terminated |= truncated
         self.logger.info(f"Reward: {reward}")
         self.logger.info(f"Terminated: {terminated}")
 
@@ -216,7 +219,7 @@ class Player(object):
             self.logger.debug(f"q_next: {q_next}")
 
             q_next_max, _ = torch.max(q_next, dim=1)
-            q_next_max[t] = 0
+            # q_next_max[t] = 0
             self.logger.debug(f"q_next_max: {q_next_max}")
 
             target = r + self.get_gamma() * q_next_max
@@ -250,23 +253,27 @@ class Player(object):
 
     def transition(self, observation):
         raise
-
+    
 class LinearModelPlayer(Player):
     def init_model(self):
         assert self.state is not None
 
+        in_features = self.state.view(-1).shape[0]
+        out_features=self.env.action_space.n
+
         self.logger.debug(f"Iniitalizing linear models")
-        self.logger.debug(f"in_features = {self.state.shape}")
-        self.logger.debug(f"out_features = {self.env.action_space.n}")
+        self.logger.debug(f"in_features = {in_features}")
+        self.logger.debug(f"out_features = {out_features}")
 
         self.prediction_model = nn.Linear(
-            in_features=self.state.shape[0],
-            out_features=self.env.action_space.n,
+            in_features=in_features,
+            out_features=out_features,
             bias=True,
         )
 
         self.target_model = nn.Linear(
-            in_features=self.state.shape[0],
-            out_features=self.env.action_space.n,
+            in_features=in_features,
+            out_features=out_features,
             bias=True,
         )
+    

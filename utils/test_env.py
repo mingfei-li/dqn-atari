@@ -52,7 +52,7 @@ class EnvTest(object):
             self.was_in_second = True
         else:
             self.was_in_second = False
-        return self.observation_space.states[self.cur_state], reward, self.num_iters >= 5, {'ale.lives':0}
+        return self.observation_space.states[self.cur_state], reward, self.num_iters >= 5, self.num_iters >= 5, {'ale.lives':0}
 
 
     def render(self):

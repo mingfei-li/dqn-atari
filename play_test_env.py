@@ -1,14 +1,17 @@
-from players import LinearModelPlayer
+from players import LinearModelPlayer, Player
 from utils.test_env import EnvTest, ActionSpace
 import math
 import torch
 
-class LinearModelTestEnvPlayer(LinearModelPlayer):
+class TestEnvPlayer(Player):
     def transition(self, observation):
         self.state = torch.tensor(
             observation.reshape(-1).astype(float),
             dtype=torch.float,
         )
+
+class LinearModelTestEnvPlayer(LinearModelPlayer, TestEnvPlayer):
+    pass
 
 if __name__ == "__main__":
     input_size = (3, 5)
@@ -28,3 +31,5 @@ if __name__ == "__main__":
     for i in range(2000):
         print(f"Playing step {i}...")
         player.step()
+
+    env.close()
