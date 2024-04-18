@@ -11,14 +11,15 @@ class LinearModelTestEnvPlayer(LinearModelPlayer):
         )
 
 if __name__ == "__main__":
-    input_size = (5, 5, 1)
+    input_size = (3, 5)
     config = {
         "replay_start_size": 5,
         "experience_buffer_size": 10,
         "mini_batch_size": 3,
         "gamma": 0.99,
         "learning_rate": 0.01,
-        "anneal_steps": 1000
+        "anneal_steps": 100,
+        "target_model_update_interval": 10,
     }
     
     env = EnvTest(input_size)
