@@ -13,9 +13,9 @@ class LinearModelTestEnvPlayer(LinearModelPlayer):
 if __name__ == "__main__":
     input_size = (5, 5, 1)
     config = {
-        "random_start_steps": 50,
+        "replay_start_size": 5,
         "experience_buffer_size": 10,
-        "mini_batch_size": 5,
+        "mini_batch_size": 3,
         "gamma": 0.99,
         "learning_rate": 0.01,
         "anneal_steps": 1000

@@ -1,3 +1,4 @@
+import datetime
 import logging
 import random
 import torch
@@ -18,12 +19,14 @@ class Player(object):
         self.init_experience_buffer()
     
     def init_logger(self):
+        now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        log_file_name = f"logs/{now}-player_log"
         self.logger = logging.getLogger("player_logger")
         self.logger.setLevel(logging.DEBUG)
         
         console_handler = logging.StreamHandler()
-        debug_file_handler = logging.FileHandler("player_log.DEBUG")
-        info_file_handler = logging.FileHandler("player_log.INFO")
+        debug_file_handler = logging.FileHandler(f"{log_file_name}.DEBUG")
+        info_file_handler = logging.FileHandler(f"{log_file_name}.INFO")
         
         console_handler.setLevel(logging.INFO)
         debug_file_handler.setLevel(logging.DEBUG)
@@ -39,28 +42,11 @@ class Player(object):
         self.logger.addHandler(info_file_handler)
     
     def init_experience_buffer(self):
-        self.state_buffer = torch.zeros(
-            self.get_buffer_size(),
-            *self.state.shape,
-            dtype=torch.float,
-        )
-        self.next_state_buffer = torch.zeros(
-            self.get_buffer_size(),
-            *self.state.shape,
-            dtype=torch.float,
-        )
-        self.end_state_buffer = torch.zeros(
-            self.get_buffer_size(),
-            dtype=torch.bool,
-        )
-        self.action_buffer = torch.zeros(
-            self.get_buffer_size(),
-            dtype=torch.long,
-        )
-        self.reward_buffer = torch.zeros(
-            self.get_buffer_size(),
-            dtype=torch.float,
-        )
+        self.state_buffer = []
+        self.next_state_buffer = []
+        self.end_state_buffer = []
+        self.action_buffer = []
+        self.reward_buffer = []
 
     def get_buffer_size(self):
         return self.config["experience_buffer_size"]
@@ -76,6 +62,9 @@ class Player(object):
     
     def get_anneal_steps(self):
         return self.config["anneal_steps"]
+    
+    def get_learning_start_step(self):
+        return self.config["replay_start_size"]
 
     def reset(self):
         self.num_steps_played_in_episode = 0
@@ -90,7 +79,7 @@ class Player(object):
 
         self.logger.debug("Getting action")
         self.logger.debug(f"esp: {eps}")
-        if (self.total_steps_played < self.config["random_start_steps"]
+        if (self.total_steps_played < self.get_learning_start_step()
             or random.random() < eps):
             self.logger.debug("Returning a random action")
             return self.env.action_space.sample()
@@ -125,7 +114,11 @@ class Player(object):
             self.state,
             terminated,
         )
-        self.train()
+
+        if self.total_steps_played >= self.get_learning_start_step():
+            self.train()
+        else:
+            self.logger.debug("Skipped learning for the step")
 
         self.total_steps_played += 1
         self.total_reward += reward
@@ -148,50 +141,59 @@ class Player(object):
 
 
     def update_experience_buffer(
-            self, state, action, reward, next_state, terminated):
-
-        def add_experience(buffer, experience):
-            buffer[:-1] = buffer[1:].clone()
-            self.logger.debug(f"buffer: {buffer}")
-            self.logger.debug(f"experience: {experience}")
-            buffer[-1] = experience
-            self.logger.debug(f"new buffer: {buffer}")
-
+            self,
+            state,
+            action,
+            reward,
+            next_state,
+            terminated):
         self.logger.debug("Updating experience buffer")
-        add_experience(self.state_buffer, state)
-        add_experience(self.action_buffer, action)
-        add_experience(self.reward_buffer, reward)
-        add_experience(self.next_state_buffer, next_state)
-        add_experience(self.end_state_buffer, terminated)
+        self.state_buffer.append(state)
+        self.action_buffer.append(action)
+        self.reward_buffer.append(reward)
+        self.next_state_buffer.append(next_state)
+        self.end_state_buffer.append(terminated)
+
+        if len(self.state_buffer) == self.get_buffer_size() * 2:
+            self.state_buffer = self.state_buffer[-self.get_buffer_size():].copy()
+            self.action_buffer = self.action_buffer[-self.get_buffer_size():].copy()
+            self.reward_buffer = self.reward_buffer[-self.get_buffer_size():].copy()
+            self.next_state_buffer = self.next_state_buffer[-self.get_buffer_size():].copy()
+            self.end_state_buffer = self.end_state_buffer[-self.get_buffer_size():].copy()
         self.logger.debug("Experience buffer updated")
 
-    def train(self):
-        self.logger.debug("Training started")
-
+    def sample_experiences(self):
         mini_batch_indexes = random.sample(
-            range(self.get_buffer_size()),
+            range(
+                max(len(self.state_buffer) - self.get_buffer_size(), 0),
+                len(self.state_buffer),
+            ),
             self.get_mini_batch_size()
         )
 
         self.logger.debug("Mini batch sampled: ")
-        self.logger.debug(f"Indexes: {mini_batch-indexes}")
+        self.logger.debug(f"Indexes: {mini_batch_indexes}")
 
-        s = self.state_buffer[mini_batch_indexes]
+        s = torch.cat([self.state_buffer[i] for i in mini_batch_indexes])
+        a = torch.tensor([self.action_buffer[i] for i in mini_batch_indexes])
+        r = torch.tensor([self.reward_buffer[i] for i in mini_batch_indexes])
+        ns = torch.cat([self.next_state_buffer[i] for i in mini_batch_indexes])
+        t = torch.tensor([self.end_state_buffer[i] for i in mini_batch_indexes])
+
         self.logger.debug(f"States: {s}")
-
-        a = self.action_buffer[mini_batch_indexes]
         self.logger.debug(f"Actions: {a}")
-
-        r = self.reward_buffer[mini_batch_indexes]
         self.logger.debug(f"Rewards: {r}")
-
-        ns = self.next_state_buffer[mini_batch_indexes]
         self.logger.debug(f"New states: {ns}")
-
-        t = self.end_state_buffer[mini_batch_indexes]
         self.logger.debug(f"Termnated: {t}")
 
-        optimizer = torch.optim.RMSprop(self.model.parameters(), self.get_learning_rate())
+    def train(self):
+        self.logger.debug("Training started")
+
+        optimizer = torch.optim.RMSprop(
+            self.model.parameters(),
+            self.get_learning_rate()
+        )
+        n, a, r, ns, t = self.sample_experiences()
 
         with torch.no_grad():
             q_next = self.model(ns)
