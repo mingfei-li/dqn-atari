@@ -1,10 +1,12 @@
 import datetime
 import logging
+from PIL import Image
 import random
 import torch
 import torch.nn as nn
+import torchvision.transforms as transforms
 
-class Player(object):
+class RLPlayer(object):
     def __init__(self, env, config):
         self.init_logger()
         self.env = env
@@ -19,9 +21,12 @@ class Player(object):
         self.init_experience_buffer()
     
     def init_logger(self):
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+
         now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         log_file_name = f"logs/{now}-player_log"
-        self.logger = logging.getLogger("player_logger")
+        self.logger = logging.getLogger("rl_player_logger")
         self.logger.setLevel(logging.DEBUG)
         
         console_handler = logging.StreamHandler()
@@ -37,7 +42,7 @@ class Player(object):
         debug_file_handler.setFormatter(format)
         info_file_handler.setFormatter(format)
 
-        self.logger.addHandler(console_handler)
+        # self.logger.addHandler(console_handler)
         self.logger.addHandler(debug_file_handler)
         self.logger.addHandler(info_file_handler)
     
@@ -86,7 +91,7 @@ class Player(object):
         if (self.total_steps_played < self.get_learning_start_step()
             or random.random() < eps):
             self.logger.debug("Returning a random action")
-            return self.env.action_space.sample()
+            return self.env.action_space.sample(), None
         else:
             self.logger.debug(f"Applying prediction model in action selection")
             with torch.no_grad():
@@ -94,13 +99,13 @@ class Player(object):
             self.logger.debug(f"State action values: {action_values}")
             action = torch.argmax(action_values)
             self.logger.debug(f"Picked action: {action}")
-            return action
+            return action, action_values[action]
 
     def step(self):
         self.logger.info(f"Playing a new step after {self.total_steps_played} steps")
         self.logger.info(f"Player state: {self.state}")
 
-        action = self.get_action()
+        action, action_value = self.get_action()
         self.logger.info(f"Taking action: {action}")
 
         observation, reward, terminated, truncated, *_ = self.env.step(action)
@@ -121,8 +126,9 @@ class Player(object):
         )
 
         if self.total_steps_played >= self.get_learning_start_step():
-            self.train()
+            training_loss = self.train()
         else:
+            training_loss = None
             self.logger.debug("Skipped learning for the step")
 
         self.total_steps_played += 1
@@ -142,6 +148,8 @@ class Player(object):
                 f"Discounted reward gathered in episode: {self.episode_discounted_reward}"
             )
             self.reset()
+        
+        return action, action_value, reward, terminated, training_loss
 
 
     def update_experience_buffer(
@@ -247,14 +255,15 @@ class Player(object):
             self.logger.debug(f"target model after update: {self.target_model.state_dict()}")
 
         self.logger.debug("Training finished")
+        return loss
 
     def init_model(self):
         raise
 
     def transition(self, observation):
         raise
-    
-class LinearModelPlayer(Player):
+
+class LinearModelPlayer(RLPlayer):
     def init_model(self):
         assert self.state is not None
 
@@ -276,4 +285,67 @@ class LinearModelPlayer(Player):
             out_features=out_features,
             bias=True,
         )
-    
+
+class TestEnvPlayer(RLPlayer):
+    def transition(self, observation):
+        self.logger.debug(f"State transiiton from {self.state}")
+        self.logger.debug(f"observation: {observation}")
+        self.state = torch.tensor(
+            observation.reshape(-1).astype(float),
+            dtype=torch.float,
+        )
+        self.logger.debug(f"State transiitoned to {self.state}")
+
+class PongPlayer(RLPlayer):
+    def __init__(self, env, config):
+        self.last_frame = torch.zeros(84, 84)
+        super().__init__(env, config)
+
+    def transition(self, observation):
+        self.logger.debug(f"Transitioning from state: {self.state}")
+        new_state = torch.zeros(4, 84, 84)
+        if self.state is not None:
+            new_state[:3] = self.state.view(4, 84, 84)[1:].clone()
+        new_state[3] = self.transform_frame(observation)
+        self.state = new_state.view(-1)
+        self.logger.debug(f"Transitioned to new state: {self.state}")
+        self.logger.debug(f"New state shape: {self.state.shape}")
+
+    def transform_frame(self, observation):
+        frame = torch.tensor(observation).permute(2, 0, 1)
+        transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((110, 84)),
+            transforms.Grayscale(),
+            transforms.ToTensor(),
+        ])
+        frame = transform(frame).squeeze(0)[18:102, :]
+        combined_frame = torch.max(self.last_frame, frame)
+        self.last_frame = frame
+        return combined_frame
+
+class LinearModelTestEnvPlayer(LinearModelPlayer, TestEnvPlayer):
+    def __init__(self, env):
+        config = {
+            "replay_start_size": 5,
+            "experience_buffer_size": 10,
+            "mini_batch_size": 3,
+            "gamma": 0.99,
+            "learning_rate": 0.01,
+            "anneal_steps": 100,
+            "target_model_update_interval": 10,
+        }
+        super().__init__(env, config)
+
+class LinearModelPongPlayer(LinearModelPlayer, PongPlayer):
+    def __init__(self, env):
+        config = {
+            "replay_start_size": 50,
+            "experience_buffer_size": 1000,
+            "mini_batch_size": 32,
+            "gamma": 0.99,
+            "learning_rate": 0.01,
+            "anneal_steps": 1000,
+            "target_model_update_interval": 100,
+        }
+        super().__init__(env, config)

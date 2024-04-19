@@ -37,7 +37,7 @@ class EnvTest(object):
         self.cur_state = 0
         self.num_iters = 0
         self.was_in_second = False
-        return self.observation_space.states[self.cur_state]
+        return self.observation_space.states[self.cur_state], {}
         
 
     def step(self, action):
