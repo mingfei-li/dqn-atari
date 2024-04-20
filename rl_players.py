@@ -9,10 +9,17 @@ import torchvision.transforms as transforms
 
 class RLPlayer(object):
     def __init__(self, env, config):
-        self.init_logger()
         self.env = env
         self.config = config
         self.steps_played = 0
+
+        self.init_logger()
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")  # Use a GPU device
+            self.logger.debug("Using GPU:", torch.cuda.get_device_name(self.device))
+        else:
+            self.device = torch.device("cpu")  # Fallback to CPU if necessary
+            self.logger.debug("GPU not available, using CPU instead.")
         self.reset()
         self.init_model()
         self.init_experience_buffer()
@@ -24,7 +31,7 @@ class RLPlayer(object):
         now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         log_file_name = f"logs/{now}-player_log"
         self.logger = logging.getLogger("rl_player_logger")
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(self.config["logging_level"])
         
         console_handler = logging.StreamHandler()
         debug_file_handler = logging.FileHandler(f"{log_file_name}.DEBUG")
@@ -70,6 +77,9 @@ class RLPlayer(object):
 
     def get_target_model_update_interval(self):
         return self.config["target_model_update_interval"]
+    
+    def get_training_frequency(self):
+        return self.config["training_frequency"]
 
     def reset(self):
         self.logger.info("Player resets")
@@ -121,7 +131,8 @@ class RLPlayer(object):
             terminated,
         )
 
-        if self.steps_played >= self.get_learning_start_step():
+        if (self.steps_played >= self.get_learning_start_step() 
+            and self.steps_played % self.get_training_frequency() == 0):
             training_loss = self.train()
         else:
             training_loss = None
@@ -181,10 +192,10 @@ class RLPlayer(object):
         self.logger.debug(f"Indexes: {mini_batch_indexes}")
 
         s = torch.stack([self.state_buffer[i] for i in mini_batch_indexes], dim=0)
-        a = torch.tensor([self.action_buffer[i] for i in mini_batch_indexes])
-        r = torch.tensor([self.reward_buffer[i] for i in mini_batch_indexes])
+        a = torch.tensor([self.action_buffer[i] for i in mini_batch_indexes], device=self.device)
+        r = torch.tensor([self.reward_buffer[i] for i in mini_batch_indexes], device=self.device)
         ns = torch.stack([self.next_state_buffer[i] for i in mini_batch_indexes], dim=0)
-        t = torch.tensor([self.end_state_buffer[i] for i in mini_batch_indexes])
+        t = torch.tensor([self.end_state_buffer[i] for i in mini_batch_indexes], device=self.device)
 
         self.logger.debug(f"States: {s}")
         self.logger.debug(f"Actions: {a}")
@@ -197,10 +208,13 @@ class RLPlayer(object):
     def train(self):
         self.logger.debug("Training started")
 
-        optimizer = torch.optim.RMSprop(
-            self.prediction_model.parameters(),
-            self.get_learning_rate()
+        optimizer = torch.optim.Adam(
+            params=self.prediction_model.parameters(),
+            lr=self.get_learning_rate(),
+            betas=(0.95, 0.95),
+            eps=0.01,
         )
+
         s, a, r, ns, t = self.sample_experiences()
 
         with torch.no_grad():
@@ -236,7 +250,7 @@ class RLPlayer(object):
             self.logger.debug(f"target model after update: {self.target_model.state_dict()}")
 
         self.logger.debug("Training finished")
-        return loss
+        return loss.item()
 
     def init_model(self):
         raise
@@ -257,31 +271,32 @@ class TestEnvPlayer(RLPlayer):
 
 class PongPlayer(RLPlayer):
     def __init__(self, env, config):
-        self.last_frame = torch.zeros(84, 84)
         super().__init__(env, config)
+        # self.last_frame = torch.zeros(84, 84, device=self.device)
 
     def transition(self, current_state, observation):
         self.logger.debug(f"Transitioning from state: {current_state}")
-        new_state = torch.zeros(4, 84, 84)
+        self.logger.debug(f"Observation: {observation}")
+        new_state = torch.zeros(4, 84, 84, device=self.device)
         if current_state is not None:
             new_state[:3] = current_state[1:].clone()
-        new_state[3] = self.transform_frame(observation)
+        new_state[3] = torch.tensor(observation, device=self.device)
         self.logger.debug(f"Transitioned to new state: {new_state}")
         self.logger.debug(f"New state shape: {new_state.shape}")
         return new_state
 
-    def transform_frame(self, observation):
-        frame = torch.tensor(observation).permute(2, 0, 1)
-        transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((110, 84)),
-            transforms.Grayscale(),
-            transforms.ToTensor(),
-        ])
-        frame = transform(frame).squeeze(0)[18:102, :]
-        combined_frame = torch.max(self.last_frame, frame)
-        self.last_frame = frame
-        return combined_frame
+    # def transform_frame(self, observation):
+    #     frame = torch.tensor(observation, device=self.device).permute(2, 0, 1)
+    #     transform = transforms.Compose([
+    #         transforms.ToPILImage(),
+    #         transforms.Resize((110, 84)),
+    #         transforms.Grayscale(),
+    #         transforms.ToTensor(),
+    #     ])
+    #     frame = transform(frame).squeeze(0)[18:102, :]
+    #     combined_frame = torch.max(self.last_frame, frame)
+    #     self.last_frame = frame
+    #     return combined_frame
 
 class LinearModelPlayer(RLPlayer):
     def init_model(self):
@@ -306,7 +321,6 @@ class LinearModelPlayer(RLPlayer):
             bias=True,
         )
 
-
 class LinearModelTestEnvPlayer(LinearModelPlayer, TestEnvPlayer):
     def __init__(self, env):
         config = {
@@ -317,6 +331,7 @@ class LinearModelTestEnvPlayer(LinearModelPlayer, TestEnvPlayer):
             "learning_rate": 0.01,
             "anneal_steps": 100,
             "target_model_update_interval": 10,
+            "training_frequency": 4,
         }
         super().__init__(env, config)
     
@@ -333,6 +348,7 @@ class LinearModelPongPlayer(LinearModelPlayer, PongPlayer):
             "learning_rate": 0.01,
             "anneal_steps": 1000,
             "target_model_update_interval": 100,
+            "training_frequency": 4,
         }
         super().__init__(env, config)
     
@@ -345,14 +361,14 @@ class LinearModelPongPlayer(LinearModelPlayer, PongPlayer):
         ).view(-1)
 
 class ConvNet(nn.Module):
-    def __init__(self):
+    def __init__(self, output_units):
         super().__init__()
         self.conv1 = nn.Conv2d(in_channels=4, out_channels=32, kernel_size=(8, 8), stride=4)
         self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(4, 4), stride=2)
         self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3, 3), stride=1)
         self.flatten = nn.Flatten()
         self.fc1 = nn.Linear(3136, 512)
-        self.fc2 = nn.Linear(512, 6)
+        self.fc2 = nn.Linear(512, output_units)
     
     def forward(self, x):
         x = F.relu(self.conv1(x))
@@ -368,8 +384,8 @@ class CNNModelPongPlayer(PongPlayer):
         assert self.state is not None
 
         self.logger.debug(f"Iniitalizing CNN models")
-        self.prediction_model = ConvNet() 
-        self.target_model = ConvNet() 
+        self.prediction_model = ConvNet(self.env.action_space.n).to(self.device)
+        self.target_model = ConvNet(self.env.action_space.n).to(self.device)
         self.logger.debug(f"prediction_modeo: {self.prediction_model}")
         self.logger.debug(f"target_model: {self.target_model}")
         self.logger.debug(f"Finished initializing CNN models")
