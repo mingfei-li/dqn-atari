@@ -11,11 +11,7 @@ class RLPlayer(object):
         self.init_logger()
         self.env = env
         self.config = config
-        self.total_steps_played = 0
-        self.total_reward = 0
-        self.num_episode_played = 0
-        self.num_steps_played_in_episode = 0
-        self.episode_discounted_reward = 0
+        self.steps_played = 0
         self.reset()
         self.init_model()
         self.init_experience_buffer()
@@ -76,18 +72,15 @@ class RLPlayer(object):
 
     def reset(self):
         self.logger.info("Player resets")
-        self.num_steps_played_in_episode = 0
-        self.episode_discounted_reward = 0
-
         observation, *_ = self.env.reset()
         self.state = self.transition(None, observation)
 
     def get_action(self):
-        eps = max(1 - self.total_steps_played * 0.9 / self.get_anneal_steps(), 0.1)
+        eps = max(1 - self.steps_played * 0.9 / self.get_anneal_steps(), 0.1)
 
         self.logger.debug("Getting action")
         self.logger.debug(f"esp: {eps}")
-        if (self.total_steps_played < self.get_learning_start_step()
+        if (self.steps_played < self.get_learning_start_step()
             or random.random() < eps):
             self.logger.debug("Returning a random action")
             return self.env.action_space.sample(), None
@@ -101,7 +94,7 @@ class RLPlayer(object):
             return action, action_values[action]
 
     def step(self):
-        self.logger.info(f"Playing a new step after {self.total_steps_played} steps")
+        self.logger.info(f"Playing a new step after {self.steps_played} steps")
         self.logger.info(f"Player state: {self.state}")
 
         action, action_value = self.get_action()
@@ -124,30 +117,15 @@ class RLPlayer(object):
             terminated,
         )
 
-        if self.total_steps_played >= self.get_learning_start_step():
+        if self.steps_played >= self.get_learning_start_step():
             training_loss = self.train()
         else:
             training_loss = None
             self.logger.debug("Skipped learning for the step")
 
-        self.total_steps_played += 1
-        self.total_reward += reward
-        self.episode_discounted_reward += reward * (
-            self.get_gamma() ** self.num_steps_played_in_episode)
-        self.num_steps_played_in_episode += 1
-        self.logger.info(f"Finihsed playing step {self.total_steps_played}")
+        self.steps_played += 1
+        self.logger.info(f"Finihsed playing step {self.steps_played}")
 
-        if terminated:
-            self.num_episode_played += 1
-            self.logger.info(
-                f"Episode {self.num_episode_played} concluded")
-            self.logger.info(
-                f"Steps played in episode: {self.num_steps_played_in_episode}")
-            self.logger.info(
-                f"Discounted reward gathered in episode: {self.episode_discounted_reward}"
-            )
-            self.reset()
-        
         return action, action_value, reward, terminated, training_loss
 
 
@@ -246,7 +224,7 @@ class RLPlayer(object):
         optimizer.step()
         self.logger.debug(f"prediction model after training step {self.prediction_model.state_dict()}")
 
-        if self.total_steps_played % self.get_target_model_update_interval() == 0:
+        if self.steps_played % self.get_target_model_update_interval() == 0:
             self.logger.debug(f"Updating target model")
             self.logger.debug(f"target model before update: {self.target_model.state_dict()}")
 
