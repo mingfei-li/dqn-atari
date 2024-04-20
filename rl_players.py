@@ -4,6 +4,7 @@ from PIL import Image
 import random
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torchvision.transforms as transforms
 
 class RLPlayer(object):
@@ -87,11 +88,14 @@ class RLPlayer(object):
         else:
             self.logger.debug(f"Applying prediction model in action selection")
             with torch.no_grad():
-                action_values = self.prediction_model(self.state)
+                input = torch.unsqueeze(self.state, dim=0)
+                self.logger.debug(f"Model input shape: {input.shape}")
+                action_values = self.prediction_model(input)
             self.logger.debug(f"State action values: {action_values}")
-            action = torch.argmax(action_values)
-            self.logger.debug(f"Picked action: {action}")
-            return action, action_values[action]
+            action = torch.argmax(action_values, dim=1).item()
+            action_value = action_values[0, action].item()
+            self.logger.debug(f"Picked action: {action} with action value {action_value}")
+            return action, action_value
 
     def step(self):
         self.logger.info(f"Playing a new step after {self.steps_played} steps")
@@ -302,6 +306,7 @@ class LinearModelPlayer(RLPlayer):
             bias=True,
         )
 
+
 class LinearModelTestEnvPlayer(LinearModelPlayer, TestEnvPlayer):
     def __init__(self, env):
         config = {
@@ -338,3 +343,33 @@ class LinearModelPongPlayer(LinearModelPlayer, PongPlayer):
             current_state,
             observation,
         ).view(-1)
+
+class ConvNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels=4, out_channels=32, kernel_size=(8, 8), stride=4)
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(4, 4), stride=2)
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3, 3), stride=1)
+        self.flatten = nn.Flatten()
+        self.fc1 = nn.Linear(3136, 512)
+        self.fc2 = nn.Linear(512, 6)
+    
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = self.flatten(x)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+    
+class CNNModelPongPlayer(PongPlayer):
+    def init_model(self):
+        assert self.state is not None
+
+        self.logger.debug(f"Iniitalizing CNN models")
+        self.prediction_model = ConvNet() 
+        self.target_model = ConvNet() 
+        self.logger.debug(f"prediction_modeo: {self.prediction_model}")
+        self.logger.debug(f"target_model: {self.target_model}")
+        self.logger.debug(f"Finished initializing CNN models")
