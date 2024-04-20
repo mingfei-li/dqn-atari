@@ -2,10 +2,13 @@ from rl_players import LinearModelPongPlayer, LinearModelTestEnvPlayer
 from utils.test_env import EnvTest
 import logging
 import gymnasium as gym
+from gymnasium.experimental.wrappers import RecordVideoV0
 from tqdm import tqdm
 
 def play_pong():
-    env = gym.make("ALE/Pong-v5", render_mode="human")
+    env = gym.make("ALE/Pong-v5", render_mode="rgb_array")
+    env = RecordVideoV0(env, './videos')
+
     player = LinearModelPongPlayer(env)
     play(player)
     env.close()
@@ -16,7 +19,7 @@ def play_test_env():
     play(player)
 
 def play(player):
-    for episode in tqdm(range(10000), desc="Playing Eposide: "):
+    for episode in tqdm(range(10), desc="Playing Eposide: "):
         steps = 0
         total_action_value = 0
         total_reward = 0
@@ -36,5 +39,5 @@ def play(player):
                 break
 
 if __name__ == "__main__":
-    play_test_env()
-    # play_pong()
+    # play_test_env()
+    play_pong()

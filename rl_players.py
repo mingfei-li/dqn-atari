@@ -240,29 +240,6 @@ class RLPlayer(object):
     def transition(self, current_state, observation):
         raise
 
-class LinearModelPlayer(RLPlayer):
-    def init_model(self):
-        assert self.state is not None
-
-        in_features = self.state.view(-1).shape[0]
-        out_features=self.env.action_space.n
-
-        self.logger.debug(f"Iniitalizing linear models")
-        self.logger.debug(f"in_features = {in_features}")
-        self.logger.debug(f"out_features = {out_features}")
-
-        self.prediction_model = nn.Linear(
-            in_features=in_features,
-            out_features=out_features,
-            bias=True,
-        )
-
-        self.target_model = nn.Linear(
-            in_features=in_features,
-            out_features=out_features,
-            bias=True,
-        )
-
 class TestEnvPlayer(RLPlayer):
     def transition(self, current_state, observation):
         self.logger.debug(f"State transiiton from {current_state}")
@@ -301,6 +278,29 @@ class PongPlayer(RLPlayer):
         combined_frame = torch.max(self.last_frame, frame)
         self.last_frame = frame
         return combined_frame
+
+class LinearModelPlayer(RLPlayer):
+    def init_model(self):
+        assert self.state is not None
+
+        in_features = self.state.view(-1).shape[0]
+        out_features=self.env.action_space.n
+
+        self.logger.debug(f"Iniitalizing linear models")
+        self.logger.debug(f"in_features = {in_features}")
+        self.logger.debug(f"out_features = {out_features}")
+
+        self.prediction_model = nn.Linear(
+            in_features=in_features,
+            out_features=out_features,
+            bias=True,
+        )
+
+        self.target_model = nn.Linear(
+            in_features=in_features,
+            out_features=out_features,
+            bias=True,
+        )
 
 class LinearModelTestEnvPlayer(LinearModelPlayer, TestEnvPlayer):
     def __init__(self, env):
