@@ -80,8 +80,7 @@ class RLPlayer(object):
         self.episode_discounted_reward = 0
 
         observation, *_ = self.env.reset()
-        self.state = None
-        self.transition(observation)
+        self.state = self.transition(None, observation)
 
     def get_action(self):
         eps = max(1 - self.total_steps_played * 0.9 / self.get_anneal_steps(), 0.1)
@@ -114,7 +113,7 @@ class RLPlayer(object):
         self.logger.info(f"Terminated: {terminated}")
 
         prev_state = self.state
-        self.transition(observation)
+        self.state = self.transition(prev_state, observation)
         self.logger.info(f"New state: {self.state}")
 
         self.update_experience_buffer(
@@ -260,7 +259,7 @@ class RLPlayer(object):
     def init_model(self):
         raise
 
-    def transition(self, observation):
+    def transition(self, current_state, observation):
         raise
 
 class LinearModelPlayer(RLPlayer):
@@ -287,29 +286,30 @@ class LinearModelPlayer(RLPlayer):
         )
 
 class TestEnvPlayer(RLPlayer):
-    def transition(self, observation):
-        self.logger.debug(f"State transiiton from {self.state}")
+    def transition(self, current_state, observation):
+        self.logger.debug(f"State transiiton from {current_state}")
         self.logger.debug(f"observation: {observation}")
-        self.state = torch.tensor(
-            observation.reshape(-1).astype(float),
+        new_state = torch.tensor(
+            observation.astype(float),
             dtype=torch.float,
         )
-        self.logger.debug(f"State transiitoned to {self.state}")
+        self.logger.debug(f"State transiitoned to {new_state}")
+        return new_state
 
 class PongPlayer(RLPlayer):
     def __init__(self, env, config):
         self.last_frame = torch.zeros(84, 84)
         super().__init__(env, config)
 
-    def transition(self, observation):
-        self.logger.debug(f"Transitioning from state: {self.state}")
+    def transition(self, current_state, observation):
+        self.logger.debug(f"Transitioning from state: {current_state}")
         new_state = torch.zeros(4, 84, 84)
-        if self.state is not None:
-            new_state[:3] = self.state.view(4, 84, 84)[1:].clone()
+        if current_state is not None:
+            new_state[:3] = current_state[1:].clone()
         new_state[3] = self.transform_frame(observation)
-        self.state = new_state.view(-1)
-        self.logger.debug(f"Transitioned to new state: {self.state}")
-        self.logger.debug(f"New state shape: {self.state.shape}")
+        self.logger.debug(f"Transitioned to new state: {new_state}")
+        self.logger.debug(f"New state shape: {new_state.shape}")
+        return new_state
 
     def transform_frame(self, observation):
         frame = torch.tensor(observation).permute(2, 0, 1)
@@ -336,6 +336,9 @@ class LinearModelTestEnvPlayer(LinearModelPlayer, TestEnvPlayer):
             "target_model_update_interval": 10,
         }
         super().__init__(env, config)
+    
+    def transition(self, current_state, observation):
+        return super().transition(current_state, observation).view(-1)
 
 class LinearModelPongPlayer(LinearModelPlayer, PongPlayer):
     def __init__(self, env):
@@ -349,3 +352,11 @@ class LinearModelPongPlayer(LinearModelPlayer, PongPlayer):
             "target_model_update_interval": 100,
         }
         super().__init__(env, config)
+    
+    def transition(self, current_state, observation):
+        if current_state is not None:
+            current_state = current_state.view(4, 84, 84)
+        return super().transition(
+            current_state,
+            observation,
+        ).view(-1)

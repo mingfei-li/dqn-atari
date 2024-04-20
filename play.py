@@ -21,5 +21,5 @@ def play(player):
         tqdm.write(f"Step {step:5d}: action={action}, action_value={action_value}, reward={reward}, loss={training_loss}")
 
 if __name__ == "__main__":
-    play_test_env()
-    # play_pong()
+    # play_test_env()
+    play_pong()
