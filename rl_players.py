@@ -16,7 +16,7 @@ class RLPlayer(object):
         self.init_logger()
         if torch.cuda.is_available():
             self.device = torch.device("cuda")  # Use a GPU device
-            self.logger.debug("Using GPU:", torch.cuda.get_device_name(self.device))
+            self.logger.debug(f"Using GPU: {torch.cuda.get_device_name(self.device)}")
         else:
             self.device = torch.device("cpu")  # Fallback to CPU if necessary
             self.logger.debug("GPU not available, using CPU instead.")

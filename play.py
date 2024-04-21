@@ -20,7 +20,7 @@ def play_pong_test():
         "replay_start_size": 5,
         "logging_level": logging.DEBUG,
     }
-    play_pong(config, 10)
+    play_pong(config, 50_000)
 
 def play_pong_training():
     config = {
@@ -89,4 +89,4 @@ def play(player, episodes_to_train):
 
 if __name__ == "__main__":
     # play_test_env()
-    play_pong_training()
+    play_pong_test()
