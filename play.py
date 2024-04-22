@@ -1,4 +1,4 @@
-from rl_players import LinearModelPongPlayer, LinearModelTestEnvPlayer, CNNModelPongPlayer
+from rl_players import Config, LinearModelPongPlayer, LinearModelTestEnvPlayer, CNNModelPongPlayer
 from utils.test_env import EnvTest
 import csv
 import gymnasium as gym
@@ -10,32 +10,18 @@ from tqdm import tqdm
 import cProfile
 
 def play_pong_test():
-    config = {
-        "mini_batch_size": 3,
-        "experience_buffer_size": 10,
-        "target_model_update_interval": 10,
-        "gamma": 0.99,
-        "training_frequency": 4,
-        "learning_rate": 0.00025,
-        "anneal_steps": 100,
-        "replay_start_size": 5,
-        "logging_level": logging.DEBUG,
-    }
+    config = Config(
+        mini_batch_size=3,
+        replay_memory_size=10,
+        target_netwrok_update_frequency=10,
+        learning_rate=0.01,
+        final_exploration_frame=100,
+        replay_start_size=5,
+    )
     play_pong(config, 1)
 
 def play_pong_training():
-    config = {
-        "mini_batch_size": 32,
-        "experience_buffer_size": 1_000_000,
-        "target_model_update_interval": 10_000,
-        "gamma": 0.99,
-        "training_frequency": 4,
-        "learning_rate": 0.00025,
-        "anneal_steps": 1_000_000,
-        "replay_start_size": 50_000,
-        "logging_level": logging.INFO,
-    }
-    play_pong(config, 50_000)
+    play_pong(Config(), 50_000)
 
 def play_pong(config, episodes_to_train):
     env = gym.make("ALE/Pong-v5", render_mode="rgb_array", frameskip=1)
