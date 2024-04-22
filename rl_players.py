@@ -78,7 +78,7 @@ class RLPlayer(object):
         self.reward_buffer = []
 
     def reset(self):
-        self.logger.info("Player resets")
+        # self.logger.info("Player resets")
         observation, *_ = self.env.reset()
         self.state = self.transition(None, observation)
 
@@ -88,13 +88,13 @@ class RLPlayer(object):
         else:
             eps = self.config.initial_exploration + self.steps_played * self.config.anneal_rate
 
-        self.logger.info("Getting action")
+        # self.logger.info("Getting action")
         if (self.steps_played < self.config.replay_start_size
             or random.random() < eps):
-            self.logger.info("Returning a random action")
+            # self.logger.info("Returning a random action")
             return self.env.action_space.sample(), None
         else:
-            self.logger.info(f"Applying prediction model in action selection")
+            # self.logger.info(f"Applying prediction model in action selection")
             with torch.no_grad():
                 input = torch.unsqueeze(self.state, dim=0)
                 action_values = self.prediction_model(input)
@@ -107,20 +107,20 @@ class RLPlayer(object):
             return action, action_value
 
     def step(self):
-        self.logger.info(f"Playing a new step after {self.steps_played} steps")
-        self.logger.info(f"Player state: {self.state}")
+        # self.logger.info(f"Playing a new step after {self.steps_played} steps")
+        # self.logger.info(f"Player state: {self.state}")
 
         action, action_value = self.get_action()
-        self.logger.info(f"Taking action: {action}")
+        # self.logger.info(f"Taking action: {action}")
 
         observation, reward, terminated, truncated, *_ = self.env.step(action)
         done = terminated | truncated
-        self.logger.info(f"Reward: {reward}")
-        self.logger.info(f"Terminated: {terminated}")
+        # self.logger.info(f"Reward: {reward}")
+        # self.logger.info(f"Terminated: {terminated}")
 
         prev_state = self.state
         self.state = self.transition(prev_state, observation)
-        self.logger.info(f"New state: {self.state}")
+        # self.logger.info(f"New state: {self.state}")
 
         self.update_experience_buffer(
             prev_state,
@@ -135,10 +135,10 @@ class RLPlayer(object):
             training_loss = self.train()
         else:
             training_loss = None
-            self.logger.info("Skipped training for the step")
+            # self.logger.info("Skipped training for the step")
 
         self.steps_played += 1
-        self.logger.info(f"Finihsed playing step {self.steps_played}")
+        # self.logger.info(f"Finihsed playing step {self.steps_played}")
 
         return action, action_value, reward, terminated, training_loss
 
@@ -150,7 +150,7 @@ class RLPlayer(object):
             reward,
             next_state,
             terminated):
-        self.logger.info("Updating experience buffer")
+        # self.logger.info("Updating experience buffer")
         self.state_buffer.append(state)
         self.action_buffer.append(action)
         self.reward_buffer.append(reward)
@@ -158,7 +158,7 @@ class RLPlayer(object):
         self.end_state_buffer.append(terminated)
 
         if len(self.state_buffer) == self.config.replay_memory_size * 2:
-            self.logger.info("Buffer full; clearing the first half")
+            # self.logger.info("Buffer full; clearing the first half")
             if self.debug_logging:
                 self.logger.debug(f"State buffer: {self.state_buffer}")
                 self.logger.debug(f"Action buffer: {self.action_buffer}")
@@ -172,7 +172,7 @@ class RLPlayer(object):
             self.next_state_buffer = self.next_state_buffer[-self.config.replay_memory_size:].copy()
             self.end_state_buffer = self.end_state_buffer[-self.config.replay_memory_size:].copy()
 
-        self.logger.info("Experience buffer updated")
+        # self.logger.info("Experience buffer updated")
 
         if self.debug_logging:
             self.logger.debug(f"State buffer: {self.state_buffer}")
@@ -207,7 +207,7 @@ class RLPlayer(object):
         return s, a, r, ns, t
 
     def train(self):
-        self.logger.info("Training started")
+        # self.logger.info("Training started")
 
         optimizer = torch.optim.Adam(
             params=self.prediction_model.parameters(),
@@ -223,7 +223,6 @@ class RLPlayer(object):
             self.logger.debug(f"q_next: {q_next}")
 
             q_next_max, _ = torch.max(q_next, dim=1)
-            # q_next_max[t] = 0
             self.logger.debug(f"q_next_max: {q_next_max}")
 
             target = r + self.config.discount_factor * q_next_max
@@ -247,7 +246,7 @@ class RLPlayer(object):
             self.logger.debug(f"prediction model after training step {self.prediction_model.state_dict()}")
 
         if self.steps_played % self.config.target_netwrok_update_frequency == 0:
-            self.logger.info(f"Updating target model")
+            # self.logger.info(f"Updating target model")
 
             if self.debug_logging:
                 self.logger.debug(f"target model before update: {self.target_model.state_dict()}")
@@ -257,7 +256,7 @@ class RLPlayer(object):
             if self.debug_logging:
                 self.logger.debug(f"target model after update: {self.target_model.state_dict()}")
 
-        self.logger.info("Training finished")
+        # self.logger.info("Training finished")
         return loss.item()
 
     def init_model(self):
@@ -283,14 +282,14 @@ class PongPlayer(RLPlayer):
         # self.last_frame = torch.zeros(84, 84, device=self.device)
 
     def transition(self, current_state, observation):
-        self.logger.debug(f"Transitioning from state: {current_state}")
-        self.logger.debug(f"Observation: {observation}")
+        # self.logger.debug(f"Transitioning from state: {current_state}")
+        # self.logger.debug(f"Observation: {observation}")
         new_state = torch.zeros(4, 84, 84, device=self.device)
         if current_state is not None:
             new_state[:3] = current_state[1:].clone()
         new_state[3] = torch.tensor(observation, device=self.device)
-        self.logger.debug(f"Transitioned to new state: {new_state}")
-        self.logger.debug(f"New state shape: {new_state.shape}")
+        # self.logger.debug(f"Transitioned to new state: {new_state}")
+        # self.logger.debug(f"New state shape: {new_state.shape}")
         return new_state
 
     # def transform_frame(self, observation):

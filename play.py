@@ -37,46 +37,47 @@ def play_test_env():
     player = LinearModelTestEnvPlayer(env)
     play(player)
 
-def play_one_episode(player, episode):
-    start_time = time.time()
-    steps = 0
-    total_action_value = 0
-    total_reward = 0
-    total_loss = 0
-
-    while True:
-        action, action_value, reward, terminated, loss = player.step()
-        steps += 1
-        elapsed_time = time.time() - start_time
-        total_reward += reward
-        if action_value is not None:
-            total_action_value += action_value
-        if loss is not None:
-            total_loss += loss
-        tqdm.write(f"Episode {episode:6d}: "
-                    f"step = {steps: 6d}, "
-                    f"elapsed_time = {str(timedelta(seconds=elapsed_time))}, "
-                    f"avg_action_value = {total_action_value/steps:20.15f}, "
-                    f"reward = {total_reward:5.02f}, "
-                    f"avg_loss = {total_loss/steps:20.15f}")
-        if terminated:
-            with open('training_log.csv', 'a') as f:
-                writer = csv.writer(f)
-                writer.writerow([
-                    episode,
-                    steps,
-                    elapsed_time,
-                    total_action_value / steps,
-                    total_reward,
-                    total_loss / steps
-                ])
-            player.reset()
-            break
-
 def play(player, episodes_to_train):
+    global_steps = 0
     for episode in tqdm(range(episodes_to_train), desc="Playing Eposide: "):
-        play_one_episode(player, episode)
+        start_time = time.time()
+        steps = 0
+        total_action_value = 0
+        total_reward = 0
+        total_loss = 0
+
+        while True:
+            action, action_value, reward, terminated, loss = player.step()
+            global_steps += 1
+            steps += 1
+            elapsed_time = time.time() - start_time
+            total_reward += reward
+            if action_value is not None:
+                total_action_value += action_value
+            if loss is not None:
+                total_loss += loss
+
+            if terminated:
+                tqdm.write(f"Episode {episode:6d}, global_steps {global_steps: 6d}: "
+                        f"step = {steps: 6d}, "
+                        f"elapsed_time = {str(timedelta(seconds=elapsed_time))}, "
+                        f"avg_action_value = {total_action_value/steps:20.15f}, "
+                        f"reward = {total_reward:5.02f}, "
+                        f"avg_loss = {total_loss/steps:20.15f}")
+
+                with open('training_log.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([
+                        episode,
+                        steps,
+                        elapsed_time,
+                        total_action_value / steps,
+                        total_reward,
+                        total_loss / steps
+                    ])
+                player.reset()
+                break
         
 if __name__ == "__main__":
     # play_test_env()
-    cProfile.run("play_pong_test()", "perf_stats")
+    cProfile.run("play_pong_training()", "perf_stats_training")
