@@ -1,4 +1,5 @@
-from rl_players import Config, LinearModelPongPlayer, LinearModelTestEnvPlayer, CNNModelPongPlayer
+from config import Config
+from rl_players import RLPlayer
 from utils.test_env import EnvTest
 import csv
 import gymnasium as gym
@@ -18,24 +19,19 @@ def play_pong_test():
         final_exploration_frame=100,
         replay_start_size=5,
     )
-    play_pong(config, 1)
+    play_pong(config, 1, debug=True)
 
 def play_pong_training():
-    play_pong(Config(), 50_000)
+    play_pong(Config(), 50_000, debug=False)
 
-def play_pong(config, episodes_to_train):
+def play_pong(config, episodes_to_train, debug):
     env = gym.make("ALE/Pong-v5", render_mode="rgb_array", frameskip=1)
     env = AtariPreprocessingV0(env)
     env = RecordVideoV0(env, './videos')
 
-    player = CNNModelPongPlayer(env, config)
+    player = RLPlayer(env, config, debug)
     play(player, episodes_to_train)
     env.close()
-
-def play_test_env():
-    env = EnvTest((3, 5))
-    player = LinearModelTestEnvPlayer(env)
-    play(player)
 
 def play(player, episodes_to_train):
     global_steps = 0
@@ -58,7 +54,7 @@ def play(player, episodes_to_train):
                 total_loss += loss
 
             if terminated:
-                tqdm.write(f"Episode {episode:6d}, global_steps {global_steps: 6d}: "
+                tqdm.write(f"Episode {episode:6d}, global_steps {global_steps: 10d}: "
                         f"step = {steps: 6d}, "
                         f"elapsed_time = {str(timedelta(seconds=elapsed_time))}, "
                         f"avg_action_value = {total_action_value/steps:20.15f}, "
@@ -79,5 +75,4 @@ def play(player, episodes_to_train):
                 break
         
 if __name__ == "__main__":
-    # play_test_env()
     cProfile.run("play_pong_training()", "perf_stats_training")
