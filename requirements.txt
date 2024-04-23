@@ -1,1 +1,8 @@
-Pillow, torch, torchvision, gymnasium, gymnasium[atari], gymnasium[accept-rom-license], gymnasium[other], tqdm
+Pillow
+torch
+torchvision
+gymnasium
+gymnasium[atari]
+gymnasium[accept-rom-license]
+gymnasium[other]
+tqdm
