@@ -25,7 +25,7 @@ def play_pong_training():
 
 def play_pong(config, episodes_to_train):
     env = gym.make("ALE/Pong-v5", render_mode="rgb_array", frameskip=1)
-    env = AtariPreprocessingV0(env, scale_obs=True)
+    env = AtariPreprocessingV0(env)
     env = RecordVideoV0(env, './videos')
 
     player = CNNModelPongPlayer(env, config)
