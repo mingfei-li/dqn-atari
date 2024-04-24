@@ -72,7 +72,7 @@ def play(player, episodes_to_train):
                         f"avg_action_value = {total_action_value / max(steps-explorations, 1): 10.6f}, "
                         f"exploration_rate = {float(explorations) / steps: 10.6f}, "
                         f"reward = {total_reward: 5.02f}, "
-                        f"avg_loss = {total_loss/steps: 10.6f}"
+                        f"avg_loss = {total_loss/steps: 10.6f}, "
                         f"avg_lr = {total_lr/steps: 10.6f}")
 
                 with open(f'logs/training_log-{global_start_time}.csv', 'a') as f:
