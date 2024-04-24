@@ -10,6 +10,7 @@ from datetime import timedelta
 from gymnasium.experimental.wrappers import RecordVideoV0, AtariPreprocessingV0
 from tqdm import tqdm
 import cProfile
+from statistics import mean
 
 def play_pong_test():
     config = Config(
@@ -44,11 +45,12 @@ def play(player, episodes_to_train):
     for episode in tqdm(range(episodes_to_train), desc="Playing Eposide: "):
         start_time = time.time()
         steps = 0
-        total_action_value = 0
         total_reward = 0
-        total_loss = 0
-        total_lr = 0
         explorations = 0
+
+        action_values = []
+        losses = []
+        lrs = []
 
         while True:
             action, action_value, reward, terminated, loss, lr = player.step()
@@ -56,24 +58,37 @@ def play(player, episodes_to_train):
             steps += 1
             elapsed_time = time.time() - start_time
             total_reward += reward
+
             if action_value is not None:
-                total_action_value += action_value
+                action_values.append(action_value)
             else:
                 explorations += 1
             if loss is not None:
-                total_loss += loss
+                losses.append(loss)
             if lr is not None:
-                total_lr += lr
+                lrs.append(lr)
 
             if terminated:
+                if len(action_values) > 0:
+                    avg_action_value = mean(action_values)
+                else:
+                    avg_action_value = 0
+
+                if len(lrs) > 0:
+                    avg_lr = mean(lrs)
+                    avg_loss = mean(losses)
+                else:
+                    avg_lr = 0
+                    avg_loss = 0
+
                 tqdm.write(f"Episode {episode:6d}, global_steps {global_steps: 10d}: "
                         f"step = {steps: 6d}, "
                         f"elapsed_time = {str(timedelta(seconds=elapsed_time))}, "
-                        f"avg_action_value = {total_action_value / max(steps-explorations, 1): 10.6f}, "
+                        f"avg_action_value = {avg_action_value: 10.6f}, "
                         f"exploration_rate = {float(explorations) / steps: 10.6f}, "
                         f"reward = {total_reward: 5.02f}, "
-                        f"avg_loss = {total_loss/steps: 10.6f}, "
-                        f"avg_lr = {total_lr/steps: 10.6f}")
+                        f"avg_loss = {avg_loss: 10.6f}, "
+                        f"avg_lr = {avg_lr: 10.6f}")
 
                 with open(f'logs/training_log-{global_start_time}.csv', 'a') as f:
                     writer = csv.writer(f)
@@ -81,11 +96,11 @@ def play(player, episodes_to_train):
                         episode,
                         steps,
                         elapsed_time,
-                        total_action_value / max(steps-explorations, 1),
+                        avg_action_value, 1,
                         float(explorations) / steps,
                         total_reward,
-                        total_loss / steps,
-                        total_lr / steps,
+                        avg_loss,
+                        avg_lr,
                     ])
                 player.reset()
                 break
