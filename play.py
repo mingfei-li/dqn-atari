@@ -81,14 +81,15 @@ def play(player, episodes_to_train):
                     avg_lr = 0
                     avg_loss = 0
 
-                tqdm.write(f"Episode {episode:6d}, global_steps {global_steps: 10d}: "
-                        f"step = {steps: 6d}, "
-                        f"elapsed_time = {str(timedelta(seconds=elapsed_time))}, "
-                        f"avg_action_value = {avg_action_value: 10.6f}, "
-                        f"exploration_rate = {float(explorations) / steps: 10.6f}, "
-                        f"reward = {total_reward: 5.02f}, "
-                        f"avg_loss = {avg_loss: 10.6f}, "
-                        f"avg_lr = {avg_lr: 10.6f}")
+                tqdm.write(f"Episode {episode:6d} | "
+                           f"global_steps {global_steps: 10d} | "
+                           f"step = {steps: 6d} | "
+                           f"elapsed_time = {str(timedelta(seconds=elapsed_time))} | "
+                           f"avg_action_value = {avg_action_value: 10.6f} | "
+                           f"exploration_rate = {float(explorations) / steps: 10.6f} | "
+                           f"reward = {total_reward: 5.02f} | "
+                           f"avg_loss = {avg_loss: 10.6f} | "
+                           f"avg_lr = {avg_lr: 10.6f}")
 
                 with open(f'logs/training_log-{global_start_time}.csv', 'a') as f:
                     writer = csv.writer(f)
