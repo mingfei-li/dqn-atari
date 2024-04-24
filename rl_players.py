@@ -143,6 +143,15 @@ class RLPlayer(object):
         )
 
         s, a, r, d, ns = self.replay_buffer.sample(self.config.mini_batch_size)
+        if self.debug:
+            self.logger.debug("Started model training")
+            self.logger.debug(f"s.shape: {s.shape}")
+            self.logger.debug(f"s: {s}")
+            self.logger.debug(f"a: {a}")
+            self.logger.debug(f"r: {r}")
+            self.logger.debug(f"d: {d}")
+            self.logger.debug(f"ns.shape: {ns.shape}")
+            self.logger.debug(f"ns: {ns}")
 
         with torch.no_grad():
             q_next = self.target_model(ns)
@@ -170,12 +179,6 @@ class RLPlayer(object):
             )
 
         if self.debug:
-            self.logger.debug("Finished model training")
-            self.logger.debug(f"s: {s}")
-            self.logger.debug(f"a: {a}")
-            self.logger.debug(f"r: {r}")
-            self.logger.debug(f"d: {d}")
-            self.logger.debug(f"ns: {ns}")
             self.logger.debug(f"q_next: {q_next}")
             self.logger.debug(f"q_next_max: {q_next_max}")
             self.logger.debug(f"target: {target}")
@@ -186,6 +189,7 @@ class RLPlayer(object):
             self.logger.debug(f"prediction model after training step {self.prediction_model.state_dict()}")
             self.logger.debug(f"target model before update: {prev_target_model_dict}")
             self.logger.debug(f"target model after update: {self.target_model.state_dict()}")
+            self.logger.debug("Finished model training")
 
         return loss.item()
 

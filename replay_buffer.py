@@ -87,7 +87,7 @@ class ReplayBuffer(object):
         else:
             start = index - self.state_depth + 1
             end = index + 1
-            return self.frames[start:end]
+            return self.frames[start:end].type(torch.float)
 
     def get_last_state(self):
         return self._get_state_at_index(self.back)

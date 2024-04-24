@@ -1,4 +1,5 @@
 from config import Config
+import datetime
 from rl_players import RLPlayer
 from utils.test_env import EnvTest
 import csv
@@ -18,7 +19,7 @@ def play_pong_test():
         learning_rate=0.01,
         final_exploration_frame=100,
         replay_start_size=5,
-        model_saving_frequency=1,
+        model_saving_frequency=100,
     )
     play_pong(config, 1, debug=True)
 
@@ -36,6 +37,8 @@ def play_pong(config, episodes_to_train, debug):
 
 def play(player, episodes_to_train):
     global_steps = 0
+    global_start_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
     for episode in tqdm(range(episodes_to_train), desc="Playing Eposide: "):
         start_time = time.time()
         steps = 0
@@ -62,7 +65,7 @@ def play(player, episodes_to_train):
                         f"reward = {total_reward:5.02f}, "
                         f"avg_loss = {total_loss/steps:20.15f}")
 
-                with open('training_log.csv', 'a') as f:
+                with open(f'logs/training_log-{global_start_time}.csv', 'a') as f:
                     writer = csv.writer(f)
                     writer.writerow([
                         episode,
@@ -76,4 +79,4 @@ def play(player, episodes_to_train):
                 break
         
 if __name__ == "__main__":
-    cProfile.run("play_pong_test()", "perf_stats_training")
+    cProfile.run("play_pong_test()", "logs/perf_stats_training.log")
