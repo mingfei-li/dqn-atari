@@ -6,6 +6,8 @@ import logging
 import numpy as np
 
 class ReplayBuffer(object):
+    # ideas borrowed from stanford cs234 course assignment starter code
+
     def __init__(self, n, state_depth, device):
         self.n = n
         self.state_depth = state_depth
@@ -59,25 +61,34 @@ class ReplayBuffer(object):
         self.done[self.back] = done
 
     def _get_state_at_index(self, index):
-        state = torch.zeros(
-            (self.state_depth,) + self.frames[index].shape,
-            device=self.device,
-        )
-
-        for i in range(self.state_depth):
-            state[-(i+1)] = self.frames[index]
-
-            index -= 1
-            if index < 0:
-                if self.is_full:
-                    index = self.n - 1 
-                else:
-                    break
-            if self.done[index]:
+        need_wrapping_or_padding = index-self.state_depth+1 < 0
+        for i in range(1, self.state_depth):
+            if self.done[(index - i) % self.n]:
+                need_wrapping_or_padding = True
                 break
 
-        return state
-    
+        if need_wrapping_or_padding:
+            state = torch.zeros(
+                (self.state_depth,) + self.frames[index].shape,
+                device=self.device,
+            )
+            for i in range(self.state_depth):
+                state[-(i+1)] = self.frames[index]
+
+                index -= 1
+                if index < 0:
+                    if self.is_full:
+                        index = self.n - 1 
+                    else:
+                        break
+                if self.done[index]:
+                    break
+            return state
+        else:
+            start = index - self.state_depth + 1
+            end = index + 1
+            return self.frames[start:end]
+
     def get_last_state(self):
         return self._get_state_at_index(self.back)
 
@@ -222,7 +233,7 @@ def test_last_state():
 
     b.add(15, 15, True, np.full(shape, 16))
     b.replace_last_frame(np.full(shape, 17))
-    b.add(17, 17, True, np.full(shape, 18))
+    b.add(17, 17, False, np.full(shape, 18))
     assert torch.equal(b.get_last_state(), 
                        torch.stack([
                            torch.zeros(shape),
