@@ -17,4 +17,6 @@ class Config(object):
         self.final_exploration_frame = kwargs.get("final_exploration_frame", 1_000_000)
         self.replay_start_size = kwargs.get("replay_start_size", 50_000)
         self.no_op_max = kwargs.get("no_op_max", 30)
+        self.model_saving_frequency = kwargs.get("model_saving_frequency", 1_000_000)
+
         self.anneal_rate = float(self.final_exploration - self.initial_exploration) / self.final_exploration_frame

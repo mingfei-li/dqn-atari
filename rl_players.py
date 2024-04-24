@@ -163,6 +163,12 @@ class RLPlayer(object):
         if self.steps_played % self.config.target_netwrok_update_frequency == 0:
             self.target_model.load_state_dict(self.prediction_model.state_dict())
 
+        if self.steps_played % self.config.model_saving_frequency == 0:
+            torch.save(
+                self.prediction_model.state_dict(),
+                f"models/model-checkpoint-{self.steps_played}.pt",
+            )
+
         if self.debug:
             self.logger.debug("Finished model training")
             self.logger.debug(f"s: {s}")

@@ -18,6 +18,7 @@ def play_pong_test():
         learning_rate=0.01,
         final_exploration_frame=100,
         replay_start_size=5,
+        model_saving_frequency=1,
     )
     play_pong(config, 1, debug=True)
 
@@ -75,4 +76,4 @@ def play(player, episodes_to_train):
                 break
         
 if __name__ == "__main__":
-    cProfile.run("play_pong_training()", "perf_stats_training")
+    cProfile.run("play_pong_test()", "perf_stats_training")
