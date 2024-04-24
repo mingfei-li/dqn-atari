@@ -16,10 +16,12 @@ def play_pong_test():
         mini_batch_size=3,
         replay_memory_size=10,
         target_netwrok_update_frequency=10,
-        learning_rate=0.01,
         final_exploration_frame=100,
         replay_start_size=5,
         model_saving_frequency=100,
+        initial_lr=0.01,
+        final_lr=0.001,
+        lr_anneal_steps=10,
     )
     play_pong(config, 1, debug=True)
 
@@ -45,10 +47,11 @@ def play(player, episodes_to_train):
         total_action_value = 0
         total_reward = 0
         total_loss = 0
+        total_lr = 0
         explorations = 0
 
         while True:
-            action, action_value, reward, terminated, loss = player.step()
+            action, action_value, reward, terminated, loss, lr = player.step()
             global_steps += 1
             steps += 1
             elapsed_time = time.time() - start_time
@@ -59,15 +62,18 @@ def play(player, episodes_to_train):
                 explorations += 1
             if loss is not None:
                 total_loss += loss
+            if lr is not None:
+                total_lr += lr
 
             if terminated:
                 tqdm.write(f"Episode {episode:6d}, global_steps {global_steps: 10d}: "
                         f"step = {steps: 6d}, "
                         f"elapsed_time = {str(timedelta(seconds=elapsed_time))}, "
-                        f"avg_action_value = {total_action_value / max(steps-explorations, 1): 20.15f}, "
-                        f"exploration_rate = {float(explorations) / steps: 20.15f}, "
+                        f"avg_action_value = {total_action_value / max(steps-explorations, 1): 10.6f}, "
+                        f"exploration_rate = {float(explorations) / steps: 10.6f}, "
                         f"reward = {total_reward: 5.02f}, "
-                        f"avg_loss = {total_loss/steps: 20.15f}")
+                        f"avg_loss = {total_loss/steps: 10.6f}"
+                        f"avg_lr = {total_lr/steps: 10.6f}")
 
                 with open(f'logs/training_log-{global_start_time}.csv', 'a') as f:
                     writer = csv.writer(f)
@@ -78,7 +84,8 @@ def play(player, episodes_to_train):
                         total_action_value / max(steps-explorations, 1),
                         float(explorations) / steps,
                         total_reward,
-                        total_loss / steps
+                        total_loss / steps,
+                        total_lr / steps,
                     ])
                 player.reset()
                 break

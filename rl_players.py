@@ -67,17 +67,19 @@ class RLPlayer(object):
         observation, *_ = self.env.reset()
         self.replay_buffer.replace_last_frame(observation)
 
+    def get_eps(self):
+        if self.steps_played > self.config.final_exploration_frame:
+            return self.config.final_exploration
+        else:
+            return self.config.initial_exploration + self.steps_played * self.config.eps_anneal_rate
+
     def get_action(self):
         if self.steps_played < self.config.replay_start_size:
             if self.debug:
                 self.logger.debug(f"Taking a random action; only {self.steps_played} played")
             return self.env.action_space.sample(), None
 
-        if self.steps_played > self.config.final_exploration_frame:
-            eps = self.config.final_exploration
-        else:
-            eps = self.config.initial_exploration + self.steps_played * self.config.anneal_rate
-
+        eps = self.get_eps()
         if random.random() < eps:
             if self.debug:
                 self.logger.debug(f"Taking a random action due to exploration, eps = {eps}")
@@ -116,30 +118,37 @@ class RLPlayer(object):
             self.logger.debug("Added a step to buffer")
             self.replay_buffer.log(self.logger)
 
-        training_loss = self.train()
+        training_loss, lr = self.train()
         self.steps_played += 1
 
-        return action, action_value, reward, terminated, training_loss
+        return action, action_value, reward, terminated, training_loss, lr
+
+    def get_lr(self):
+        if self.steps_played >= self.config.lr_anneal_steps:
+            return self.config.final_lr
+        else:
+            return self.config.initial_lr + self.steps_played * self.config.lr_anneal_rate
 
     def train(self):
         if self.steps_played < self.config.replay_start_size:
             if self.debug:
                 self.logger.debug("Didn't train: not played enough steps")
-            return None
+            return None, None
 
         if self.steps_played % self.config.update_frequency != 0:
             if self.debug:
                 self.logger.debug("Didn't train: not at the right step")
-            return None
+            return None, None
 
+        lr = self.get_lr()
         optimizer = torch.optim.Adam(
             params=self.prediction_model.parameters(),
-            lr=self.config.learning_rate,
-            betas=(
-                self.config.gradient_momentum,
-                self.config.squared_gradient_momentum,
-            ),
-            eps=self.config.min_squared_gradient,
+            lr=lr,
+            # betas=(
+            #     self.config.gradient_momentum,
+            #     self.config.squared_gradient_momentum,
+            # ),
+            # eps=self.config.min_squared_gradient,
         )
 
         s, a, r, d, ns = self.replay_buffer.sample(self.config.mini_batch_size)
@@ -167,6 +176,11 @@ class RLPlayer(object):
 
         optimizer.zero_grad()
         loss.backward()
+        if self.config.grad_norm_clip:
+            nn.utils.clip_grad_norm_(
+                self.prediction_model.parameters(),
+                max_norm=self.config.grad_norm_clip,
+            )
         optimizer.step()
 
         if self.steps_played % self.config.target_netwrok_update_frequency == 0:
@@ -191,7 +205,7 @@ class RLPlayer(object):
             self.logger.debug(f"target model after update: {self.target_model.state_dict()}")
             self.logger.debug("Finished model training")
 
-        return loss.item()
+        return loss.item(), lr
 
 class ConvNet(nn.Module):
     def __init__(self, output_units):
