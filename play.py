@@ -45,6 +45,7 @@ def play(player, episodes_to_train):
         total_action_value = 0
         total_reward = 0
         total_loss = 0
+        explorations = 0
 
         while True:
             action, action_value, reward, terminated, loss = player.step()
@@ -54,6 +55,8 @@ def play(player, episodes_to_train):
             total_reward += reward
             if action_value is not None:
                 total_action_value += action_value
+            else:
+                explorations += 1
             if loss is not None:
                 total_loss += loss
 
@@ -61,9 +64,10 @@ def play(player, episodes_to_train):
                 tqdm.write(f"Episode {episode:6d}, global_steps {global_steps: 10d}: "
                         f"step = {steps: 6d}, "
                         f"elapsed_time = {str(timedelta(seconds=elapsed_time))}, "
-                        f"avg_action_value = {total_action_value/steps:20.15f}, "
-                        f"reward = {total_reward:5.02f}, "
-                        f"avg_loss = {total_loss/steps:20.15f}")
+                        f"avg_action_value = {total_action_value / max(steps-explorations, 1): 20.15f}, "
+                        f"exploration_rate = {float(explorations) / steps: 20.15f}, "
+                        f"reward = {total_reward: 5.02f}, "
+                        f"avg_loss = {total_loss/steps: 20.15f}")
 
                 with open(f'logs/training_log-{global_start_time}.csv', 'a') as f:
                     writer = csv.writer(f)
@@ -71,7 +75,8 @@ def play(player, episodes_to_train):
                         episode,
                         steps,
                         elapsed_time,
-                        total_action_value / steps,
+                        total_action_value / max(steps-explorations, 1),
+                        float(explorations) / steps,
                         total_reward,
                         total_loss / steps
                     ])
@@ -79,4 +84,4 @@ def play(player, episodes_to_train):
                 break
         
 if __name__ == "__main__":
-    cProfile.run("play_pong_test()", "logs/perf_stats_training.log")
+    cProfile.run("play_pong_training()", "logs/perf_stats_training.log")
