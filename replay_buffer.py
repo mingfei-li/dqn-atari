@@ -73,7 +73,7 @@ class ReplayBuffer(object):
                 device=self.device,
             )
             for i in range(self.state_history):
-                state[-(i+1)] = self.frames[index]
+                state[-(i+1)] = self.frames[index] / 255.0
 
                 index -= 1
                 if index < 0:
@@ -87,7 +87,7 @@ class ReplayBuffer(object):
         else:
             start = index - self.state_history + 1
             end = index + 1
-            return self.frames[start:end].type(torch.float)
+            return self.frames[start:end] / 255.0
 
     def get_last_state(self):
         return self._get_state_at_index(self.back)
