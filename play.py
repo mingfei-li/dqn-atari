@@ -33,7 +33,7 @@ def train():
 def play(config, episodes_to_train, debug):
     env = gym.make("ALE/Pong-v5", render_mode="rgb_array", frameskip=1)
     env = AtariPreprocessingV0(env)
-    env = RecordVideoV0(env, config.record_path + '/videos/')
+    env = RecordVideoV0(env, config.record_path)
 
     player = RLPlayer(env, config, debug)
     global_start_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -114,4 +114,3 @@ def play(config, episodes_to_train, debug):
         
 if __name__ == "__main__":
     train()
-    # cProfile.run("train()", "results/logs/perf_stats_training.log")
