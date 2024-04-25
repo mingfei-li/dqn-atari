@@ -82,35 +82,35 @@ class RLPlayer(object):
             self.lr = self.config.lr_end
 
     def get_action(self, obs):
-        self.replay_buffer.add_frame(obs)
-
-        if self.t < self.config.learning_start or random.random() < self.eps:
-            if self.debug:
-                self.logger.debug(f"Taking a random action...")
-            return self.env.action_space.sample(), None, self.eps
-
-        self.q_net.eval()
-        with torch.no_grad():
-            state = torch.unsqueeze(self.replay_buffer.get_last_state(), dim=0)
-            action_values = self.q_net(state)
-        action = torch.argmax(action_values, dim=1).item()
-        action_value = action_values[0, action].item()
-
-        if self.debug:
-            self.logger.debug(f"Applied prediction model in action selection")
-            self.logger.debug(f"State: {state}")
-            self.logger.debug(f"State action values: {action_values}")
-            self.logger.debug(f"Picked action: {action} with action value {action_value}")
-
-        return action, action_value, self.eps
-    
-    def update(self, action, reward, done):
-        self.t += 1
         if self.debug:
             self.logger.debug(f"=======================================================")
             self.logger.debug(f"    Kicking off update: {self.t}")
             self.logger.debug(f"=======================================================")
 
+        self.replay_buffer.add_frame(obs)
+        state = self.replay_buffer.get_last_state()
+
+        if self.t < self.config.learning_start or random.random() < self.eps:
+            action = self.env.action_space.sample()
+            q = None
+            if self.debug:
+                self.logger.debug(f"Taking a random action {action}")
+        else:
+            self.q_net.eval()
+            with torch.no_grad():
+                q = self.q_net(torch.unsqueeze(state, dim=0))[0]
+            action = torch.argmax(q, dim=0).item()
+            if self.debug:
+                self.logger.debug(f"Applied Q-Net in action selection")
+                self.logger.debug(f"State: {state}")
+                self.logger.debug(f"Q values: {q}")
+                self.logger.debug(f"Action: {action}")
+                self.logger.debug(f"Action value: {q[action]}")
+
+        return state, action, q, self.eps
+    
+    def update(self, action, reward, done):
+        self.t += 1
         self.replay_buffer.add_action(action)
         self.replay_buffer.add_reward(reward)
         self.replay_buffer.add_done(done)
@@ -118,23 +118,23 @@ class RLPlayer(object):
             self.logger.debug("Added a step to buffer")
             self.replay_buffer.log(self.logger)
 
-        loss, lr = self.train()
+        loss, lr, training_info = self.train()
 
         self.update_eps()
         self.update_lr()
 
-        return loss, lr
+        return loss, lr, training_info
 
     def train(self):
         if self.t < self.config.learning_start:
             if self.debug:
                 self.logger.debug("Didn't train: not played enough steps")
-            return None, None
+            return None, None, None
 
         if self.t % self.config.learning_freq != 0:
             if self.debug:
                 self.logger.debug("Didn't train: not at the right step")
-            return None, None
+            return None, None, None
 
         s, a, r, d, ns = self.replay_buffer.sample(self.config.batch_size)
         s = s[~d]
@@ -145,7 +145,7 @@ class RLPlayer(object):
         if len(s) == 0:
             if self.debug:
                 self.logger.debug("Didn't train: empty sample")
-            return None, None
+            return None, None, None
 
         if self.debug:
             self.logger.debug("Started model training")
@@ -201,7 +201,7 @@ class RLPlayer(object):
             self.logger.debug(f"target model after update: {self.target_q_net.state_dict()}")
             self.logger.debug("Finished model training")
 
-        return loss.item(), self.lr
+        return loss.item(), self.lr, (s, a, r, ns, q_a, target)
 
 class ConvNet(nn.Module):
     def __init__(self, output_units):

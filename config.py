@@ -10,13 +10,18 @@ class Config():
     grad_clip         = True
     clip_val          = 1
     saving_freq       = 250000
-    log_freq          = 50
+
     eval_freq         = 250000
     record_freq       = 250000
     soft_epsilon      = 0.05
 
+    # logging config
+    log_freq          = 50
+    log_episode_freq  = 100000
+    log_training_freq = 100000
+
     # nature paper hyper params
-    nsteps_train       = 5000000
+    nsteps_train       = 50_000_000
     batch_size         = 32
     buffer_size        = 1000000
     target_update_freq = 10000
