@@ -32,7 +32,7 @@ def train():
 
 def play(config, episodes_to_train, debug):
     env = gym.make("ALE/Pong-v5", render_mode="rgb_array", frameskip=1)
-    env = AtariPreprocessingV0(env)
+    env = AtariPreprocessingV0(env, noop_max=0)
     env = RecordVideoV0(env, config.record_path)
 
     player = RLPlayer(env, config, debug)
