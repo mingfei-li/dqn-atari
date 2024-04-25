@@ -114,3 +114,4 @@ def play(config, episodes_to_train, debug):
         
 if __name__ == "__main__":
     train()
+    # cProfile.run("train()", "results/logs/perf_stats_training.log")
