@@ -11,6 +11,7 @@ from gymnasium.experimental.wrappers import RecordVideoV0, AtariPreprocessingV0
 from tqdm import tqdm
 import cProfile
 from statistics import mean
+import os
 
 def test():
     config = Config()
@@ -93,6 +94,8 @@ def play(config, episodes_to_train, debug):
                            f"avg_loss = {avg_loss: 10.6f} | "
                            f"avg_lr = {avg_lr: 10.6f}")
 
+                if not os.path.exists(config.log_path):
+                    os.makedirs(config.log_path)
                 with open(config.log_path + f'/training_log-{global_start_time}.csv', 'a') as f:
                     writer = csv.writer(f)
                     writer.writerow([
