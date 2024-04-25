@@ -8,9 +8,9 @@ import numpy as np
 class ReplayBuffer(object):
     # ideas borrowed from stanford cs234 course assignment starter code
 
-    def __init__(self, n, state_depth, device):
+    def __init__(self, n, state_history, device):
         self.n = n
-        self.state_depth = state_depth
+        self.state_history = state_history
         self.device = device
 
         self.frames = None
@@ -61,18 +61,18 @@ class ReplayBuffer(object):
         self.done[self.back] = done
 
     def _get_state_at_index(self, index):
-        need_wrapping_or_padding = index-self.state_depth+1 < 0
-        for i in range(1, self.state_depth):
+        need_wrapping_or_padding = index-self.state_history+1 < 0
+        for i in range(1, self.state_history):
             if self.done[(index - i) % self.n]:
                 need_wrapping_or_padding = True
                 break
 
         if need_wrapping_or_padding:
             state = torch.zeros(
-                (self.state_depth,) + self.frames[index].shape,
+                (self.state_history,) + self.frames[index].shape,
                 device=self.device,
             )
-            for i in range(self.state_depth):
+            for i in range(self.state_history):
                 state[-(i+1)] = self.frames[index]
 
                 index -= 1
@@ -85,7 +85,7 @@ class ReplayBuffer(object):
                     break
             return state
         else:
-            start = index - self.state_depth + 1
+            start = index - self.state_history + 1
             end = index + 1
             return self.frames[start:end].type(torch.float)
 
@@ -109,7 +109,7 @@ class ReplayBuffer(object):
 
         if self.is_full:
             indexes = [(i % self.n) for i in random.sample(
-                range(self.back + self.state_depth, self.back + self.n),
+                range(self.back + self.state_history, self.back + self.n),
                 batch_size,
             )]
         else:
@@ -141,7 +141,7 @@ class ReplayBuffer(object):
 
 def test_last_state():
     shape = (84, 84)
-    b = ReplayBuffer(n=8, state_depth=4, device=torch.device("cpu"))
+    b = ReplayBuffer(n=8, state_history=4, device=torch.device("cpu"))
     
     b.replace_last_frame(np.full(shape, 1))
     b.add(1, 1, False, np.full(shape, 2))

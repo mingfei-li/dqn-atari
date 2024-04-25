@@ -12,63 +12,63 @@ from tqdm import tqdm
 import cProfile
 from statistics import mean
 
-def play_pong_test():
-    config = Config(
-        mini_batch_size=3,
-        replay_memory_size=10,
-        target_netwrok_update_frequency=10,
-        final_exploration_frame=100,
-        replay_start_size=5,
-        model_saving_frequency=100,
-        initial_lr=0.01,
-        final_lr=0.001,
-        lr_anneal_steps=10,
-    )
-    play_pong(config, 1, debug=True)
+def test():
+    config = Config()
+    config.batch_size = 3
+    config.buffer_size = 10
+    config.target_update_freq = 20
+    config.eps_nsteps = 100
+    config.learning_start = 5
+    config.learning_freq = 10
+    config.saving_freq = 100
+    config.lr_begin = 0.01
+    config.lr_end = 0.001
+    config.lr_nsteps = 10
+    play(config, 1, debug=True)
 
-def play_pong_training():
-    play_pong(Config(), 50_000, debug=False)
+def train():
+    play(Config(), 50_000, debug=False)
 
-def play_pong(config, episodes_to_train, debug):
+def play(config, episodes_to_train, debug):
     env = gym.make("ALE/Pong-v5", render_mode="rgb_array", frameskip=1)
     env = AtariPreprocessingV0(env)
-    env = RecordVideoV0(env, './videos')
+    env = RecordVideoV0(env, config.record_path + '/videos/')
 
     player = RLPlayer(env, config, debug)
-    play(player, episodes_to_train)
-    env.close()
-
-def play(player, episodes_to_train):
-    global_steps = 0
     global_start_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
     for episode in tqdm(range(episodes_to_train), desc="Playing Eposide: "):
         start_time = time.time()
         steps = 0
-        total_reward = 0
-        explorations = 0
 
+        rewards = []
         action_values = []
         losses = []
         lrs = []
+        epsilons = []
+
+        obs, _ = env.reset()
+        player.reset(obs)
 
         while True:
-            action, action_value, reward, terminated, loss, lr = player.step()
-            global_steps += 1
+            action, action_value, eps  = player.get_action()
+            obs, reward, terminated, truncated, *_ = env.step(action)
+            done = terminated or truncated
+            loss, lr = player.update(action, obs, reward, done)
+
             steps += 1
             elapsed_time = time.time() - start_time
-            total_reward += reward
 
+            epsilons.append(eps)
+            rewards.append(reward)
             if action_value is not None:
                 action_values.append(action_value)
-            else:
-                explorations += 1
             if loss is not None:
                 losses.append(loss)
             if lr is not None:
                 lrs.append(lr)
 
-            if terminated:
+            if done:
                 if len(action_values) > 0:
                     avg_action_value = mean(action_values)
                 else:
@@ -80,31 +80,34 @@ def play(player, episodes_to_train):
                 else:
                     avg_lr = 0
                     avg_loss = 0
+                avg_eps = mean(epsilons)
+                total_reward = sum(rewards)
 
                 tqdm.write(f"Episode {episode:6d} | "
-                           f"global_steps {global_steps: 10d} | "
+                           f"global_steps {player.t: 10d} | "
                            f"step = {steps: 6d} | "
                            f"elapsed_time = {str(timedelta(seconds=elapsed_time))} | "
                            f"avg_action_value = {avg_action_value: 10.6f} | "
-                           f"exploration_rate = {float(explorations) / steps: 10.6f} | "
+                           f"exploration_rate = {avg_eps: 10.6f} | "
                            f"reward = {total_reward: 5.02f} | "
                            f"avg_loss = {avg_loss: 10.6f} | "
                            f"avg_lr = {avg_lr: 10.6f}")
 
-                with open(f'logs/training_log-{global_start_time}.csv', 'a') as f:
+                with open(config.log_path + f'/training_log-{global_start_time}.csv', 'a') as f:
                     writer = csv.writer(f)
                     writer.writerow([
                         episode,
                         steps,
                         elapsed_time,
                         avg_action_value, 1,
-                        float(explorations) / steps,
+                        avg_eps,
                         total_reward,
                         avg_loss,
                         avg_lr,
                     ])
-                player.reset()
                 break
+
+    env.close()
         
 if __name__ == "__main__":
-    cProfile.run("play_pong_training()", "logs/perf_stats_training.log")
+    cProfile.run("test()", "results/logs/perf_stats_training.log")

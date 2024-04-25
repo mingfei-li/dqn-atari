@@ -7,6 +7,7 @@ import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import os
 
 class RLPlayer(object):
     def __init__(self, env, config: Config, debug=False):
@@ -16,33 +17,37 @@ class RLPlayer(object):
             self.device = torch.device("cuda")  # Use a GPU device
         else:
             self.device = torch.device("cpu")  # Fallback to CPU if necessary
-        self.init_model()
+        self.init_models(config.model_path)
 
         self.debug = debug
         if self.debug:
-            self.init_logger()
+            self.init_logger(config.log_path)
 
         self.replay_buffer = ReplayBuffer(
-            n=self.config.replay_memory_size,
-            state_depth=self.config.agent_history_length,
+            n=self.config.buffer_size,
+            state_history=self.config.state_history,
             device=self.device,
         )
-        self.steps_played = 0
-        self.reset()
+
+        self.t = 0
+        self.eps = self.config.eps_begin
+        self.lr = self.config.lr_begin
 
         if self.debug:
-            self.logger.debug(f"using config: {config.__dict__}")
-            self.logger.debug(f"using device: {self.device}")
-            self.logger.debug(f"prediction_model: {self.prediction_model}")
-            self.logger.debug(f"target_model: {self.target_model}")
-            self.replay_buffer.log(self.logger)
+            self.logger.debug(f"config: {config.__dict__}")
+            self.logger.debug(f"device: {self.device}")
+            self.logger.debug(f"q_net: {self.q_net}")
+            self.logger.debug(f"target_q_net: {self.target_q_net}")
 
-    def init_logger(self):
+    def init_logger(self, log_path):
         for handler in logging.root.handlers[:]:
             logging.root.removeHandler(handler)
 
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)
+
         now = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        log_file_name = f"logs/{now}-player_log"
+        log_file_name = log_path + f"/{now}-player_log"
         self.logger = logging.getLogger("rl_player_logger")
         self.logger.setLevel(logging.DEBUG)
         
@@ -59,99 +64,83 @@ class RLPlayer(object):
         self.logger.addHandler(debug_file_handler)
         self.logger.addHandler(info_file_handler)
 
-    def init_model(self):
-        self.prediction_model = ConvNet(self.env.action_space.n).to(self.device)
-        self.target_model = ConvNet(self.env.action_space.n).to(self.device)
-    
-    def reset(self):
-        observation, *_ = self.env.reset()
-        self.replay_buffer.replace_last_frame(observation)
+    def init_models(self, model_path):
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
 
-    def get_eps(self):
-        if self.steps_played > self.config.final_exploration_frame:
-            return self.config.final_exploration
-        else:
-            return self.config.initial_exploration + self.steps_played * self.config.eps_anneal_rate
+        self.q_net = ConvNet(self.env.action_space.n).to(self.device)
+        self.target_q_net = ConvNet(self.env.action_space.n).to(self.device)
+    
+    def reset(self, obs):
+        self.replay_buffer.replace_last_frame(obs)
+
+    def update_eps(self):
+        self.eps += (self.config.eps_end - self.config.eps_begin) / self.config.eps_nsteps
+        if self.t >= self.config.eps_nsteps:
+            self.eps = self.config.eps_end
+    
+    def update_lr(self):
+        self.lr += (self.config.lr_end - self.config.lr_begin) / self.config.lr_nsteps
+        if self.t >= self.config.lr_nsteps:
+            self.lr = self.config.lr_end
 
     def get_action(self):
-        if self.steps_played < self.config.replay_start_size:
+        if self.t < self.config.learning_start or random.random() < self.eps:
             if self.debug:
-                self.logger.debug(f"Taking a random action; only {self.steps_played} played")
-            return self.env.action_space.sample(), None
+                self.logger.debug(f"Taking a random action...")
+            return self.env.action_space.sample(), None, self.eps
 
-        eps = self.get_eps()
-        if random.random() < eps:
-            if self.debug:
-                self.logger.debug(f"Taking a random action due to exploration, eps = {eps}")
+        self.q_net.eval()
+        with torch.no_grad():
+            state = torch.unsqueeze(self.replay_buffer.get_last_state(), dim=0)
+            action_values = self.q_net(state)
+        action = torch.argmax(action_values, dim=1).item()
+        action_value = action_values[0, action].item()
 
-            return self.env.action_space.sample(), None
-        else:
-            with torch.no_grad():
-                state = torch.unsqueeze(self.replay_buffer.get_last_state(), dim=0)
-                action_values = self.prediction_model(state)
-            action = torch.argmax(action_values, dim=1).item()
-            action_value = action_values[0, action].item()
+        if self.debug:
+            self.logger.debug(f"Applied prediction model in action selection")
+            self.logger.debug(f"State: {state}")
+            self.logger.debug(f"State action values: {action_values}")
+            self.logger.debug(f"Picked action: {action} with action value {action_value}")
 
-            if self.debug:
-                self.logger.debug(f"Applied prediction model in action selection")
-                self.logger.debug(f"State: {state}")
-                self.logger.debug(f"State action values: {action_values}")
-                self.logger.debug(f"Picked action: {action} with action value {action_value}")
-
-            return action, action_value
-
-    def step(self):
+        return action, action_value, self.eps
+    
+    def update(self, action, obs, reward, done):
+        self.t += 1
         if self.debug:
             self.logger.debug(f"=======================================================")
-            self.logger.debug(f"    Kicking off step: {self.steps_played}")
+            self.logger.debug(f"    Kicking off update: {self.t}")
             self.logger.debug(f"=======================================================")
 
-        action, action_value = self.get_action()
-        observation, reward, terminated, truncated, *_ = self.env.step(action)
         self.replay_buffer.add(
             action=action,
             reward=reward,
-            done=(terminated or truncated),
-            next_frame=observation,
+            done=done,
+            next_frame=obs,
         )
         if self.debug:
             self.logger.debug("Added a step to buffer")
             self.replay_buffer.log(self.logger)
 
-        training_loss, lr = self.train()
-        self.steps_played += 1
+        loss, lr = self.train()
 
-        return action, action_value, reward, terminated, training_loss, lr
+        self.update_eps()
+        self.update_lr()
 
-    def get_lr(self):
-        if self.steps_played >= self.config.lr_anneal_steps:
-            return self.config.final_lr
-        else:
-            return self.config.initial_lr + self.steps_played * self.config.lr_anneal_rate
+        return loss, lr
 
     def train(self):
-        if self.steps_played < self.config.replay_start_size:
+        if self.t < self.config.learning_start:
             if self.debug:
                 self.logger.debug("Didn't train: not played enough steps")
             return None, None
 
-        if self.steps_played % self.config.update_frequency != 0:
+        if self.t % self.config.learning_freq != 0:
             if self.debug:
                 self.logger.debug("Didn't train: not at the right step")
             return None, None
 
-        lr = self.get_lr()
-        optimizer = torch.optim.Adam(
-            params=self.prediction_model.parameters(),
-            lr=lr,
-            # betas=(
-            #     self.config.gradient_momentum,
-            #     self.config.squared_gradient_momentum,
-            # ),
-            # eps=self.config.min_squared_gradient,
-        )
-
-        s, a, r, d, ns = self.replay_buffer.sample(self.config.mini_batch_size)
+        s, a, r, d, ns = self.replay_buffer.sample(self.config.batch_size)
         if self.debug:
             self.logger.debug("Started model training")
             self.logger.debug(f"s.shape: {s.shape}")
@@ -162,34 +151,38 @@ class RLPlayer(object):
             self.logger.debug(f"ns.shape: {ns.shape}")
             self.logger.debug(f"ns: {ns}")
 
+        self.target_q_net.eval()
         with torch.no_grad():
-            q_next = self.target_model(ns)
+            q_next = self.target_q_net(ns)
             q_next_max, _ = torch.max(q_next, dim=1)
             q_next_max[d] = 0
-            target = r + self.config.discount_factor * q_next_max
-        q = self.prediction_model(s)
+            target = r + self.config.gamma * q_next_max
+        
+        self.q_net.train()
+        q = self.q_net(s)
         q_a = q[torch.arange(q.size(0)), a]
         loss = nn.MSELoss()(q_a, target)
 
-        prev_prediction_model_dict = self.prediction_model.state_dict()
-        prev_target_model_dict = self.target_model.state_dict()
-
+        optimizer = torch.optim.Adam(
+            params=self.q_net.parameters(),
+            lr=self.lr,
+        )
         optimizer.zero_grad()
         loss.backward()
-        if self.config.grad_norm_clip:
+        if self.config.grad_clip:
             nn.utils.clip_grad_norm_(
-                self.prediction_model.parameters(),
-                max_norm=self.config.grad_norm_clip,
+                self.q_net.parameters(),
+                max_norm=self.config.clip_val,
             )
         optimizer.step()
 
-        if self.steps_played % self.config.target_netwrok_update_frequency == 0:
-            self.target_model.load_state_dict(self.prediction_model.state_dict())
+        if self.t % self.config.target_update_freq == 0:
+            self.target_q_net.load_state_dict(self.q_net.state_dict())
 
-        if self.steps_played % self.config.model_saving_frequency == 0:
+        if self.t % self.config.saving_freq == 0:
             torch.save(
-                self.prediction_model.state_dict(),
-                f"models/model-checkpoint-{self.steps_played}.pt",
+                self.q_net.state_dict(),
+                self.config.model_path + f"model-checkpoint-{self.t}.pt",
             )
 
         if self.debug:
@@ -199,13 +192,11 @@ class RLPlayer(object):
             self.logger.debug(f"q: {q}")
             self.logger.debug(f"q_a: {q_a}")
             self.logger.debug(f"loss: {loss}")
-            self.logger.debug(f"prediction model before training step {prev_prediction_model_dict}")
-            self.logger.debug(f"prediction model after training step {self.prediction_model.state_dict()}")
-            self.logger.debug(f"target model before update: {prev_target_model_dict}")
-            self.logger.debug(f"target model after update: {self.target_model.state_dict()}")
+            self.logger.debug(f"prediction model after training step {self.q_net.state_dict()}")
+            self.logger.debug(f"target model after update: {self.target_q_net.state_dict()}")
             self.logger.debug("Finished model training")
 
-        return loss.item(), lr
+        return loss.item(), self.lr
 
 class ConvNet(nn.Module):
     def __init__(self, output_units):
