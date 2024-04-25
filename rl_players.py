@@ -141,6 +141,16 @@ class RLPlayer(object):
             return None, None
 
         s, a, r, d, ns = self.replay_buffer.sample(self.config.batch_size)
+        s = s[~d]
+        a = a[~d]
+        r = r[~d]
+        ns = ns[~d]
+
+        if len(s) == 0:
+            if self.debug:
+                self.logger.debug("Didn't train: empty sample")
+            return None, None
+
         if self.debug:
             self.logger.debug("Started model training")
             self.logger.debug(f"s.shape: {s.shape}")
@@ -155,7 +165,6 @@ class RLPlayer(object):
         with torch.no_grad():
             q_next = self.target_q_net(ns)
             q_next_max, _ = torch.max(q_next, dim=1)
-            q_next_max[d] = 0
             target = r + self.config.gamma * q_next_max
         
         self.q_net.train()
