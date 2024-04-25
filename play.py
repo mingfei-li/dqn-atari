@@ -49,13 +49,12 @@ def play(config, episodes_to_train, debug):
         epsilons = []
 
         obs, _ = env.reset()
-        player.reset(obs)
 
         while True:
-            action, action_value, eps  = player.get_action()
+            action, action_value, eps  = player.get_action(obs)
             obs, reward, terminated, truncated, *_ = env.step(action)
             done = terminated or truncated
-            loss, lr = player.update(action, obs, reward, done)
+            loss, lr = player.update(action, reward, done)
 
             steps += 1
             elapsed_time = time.time() - start_time
@@ -113,5 +112,5 @@ def play(config, episodes_to_train, debug):
     env.close()
         
 if __name__ == "__main__":
-    train()
+    test()
     # cProfile.run("train()", "results/logs/perf_stats_training.log")

@@ -2,7 +2,6 @@ from config import Config
 from replay_buffer import ReplayBuffer
 import datetime
 import logging
-from PIL import Image
 import random
 import torch
 import torch.nn as nn
@@ -26,6 +25,7 @@ class RLPlayer(object):
         self.replay_buffer = ReplayBuffer(
             n=self.config.buffer_size,
             state_history=self.config.state_history,
+            scale=self.config.obs_scale,
             device=self.device,
         )
 
@@ -71,9 +71,6 @@ class RLPlayer(object):
         self.q_net = ConvNet(self.env.action_space.n).to(self.device)
         self.target_q_net = ConvNet(self.env.action_space.n).to(self.device)
     
-    def reset(self, obs):
-        self.replay_buffer.replace_last_frame(obs)
-
     def update_eps(self):
         self.eps += (self.config.eps_end - self.config.eps_begin) / self.config.eps_nsteps
         if self.t >= self.config.eps_nsteps:
@@ -84,7 +81,9 @@ class RLPlayer(object):
         if self.t >= self.config.lr_nsteps:
             self.lr = self.config.lr_end
 
-    def get_action(self):
+    def get_action(self, obs):
+        self.replay_buffer.add_frame(obs)
+
         if self.t < self.config.learning_start or random.random() < self.eps:
             if self.debug:
                 self.logger.debug(f"Taking a random action...")
@@ -105,19 +104,16 @@ class RLPlayer(object):
 
         return action, action_value, self.eps
     
-    def update(self, action, obs, reward, done):
+    def update(self, action, reward, done):
         self.t += 1
         if self.debug:
             self.logger.debug(f"=======================================================")
             self.logger.debug(f"    Kicking off update: {self.t}")
             self.logger.debug(f"=======================================================")
 
-        self.replay_buffer.add(
-            action=action,
-            reward=reward,
-            done=done,
-            next_frame=obs,
-        )
+        self.replay_buffer.add_action(action)
+        self.replay_buffer.add_reward(reward)
+        self.replay_buffer.add_done(done)
         if self.debug:
             self.logger.debug("Added a step to buffer")
             self.replay_buffer.log(self.logger)

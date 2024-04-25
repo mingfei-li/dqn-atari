@@ -8,10 +8,11 @@ import numpy as np
 class ReplayBuffer(object):
     # ideas borrowed from stanford cs234 course assignment starter code
 
-    def __init__(self, n, state_history, device):
+    def __init__(self, n, state_history, scale, device):
         self.n = n
         self.state_history = state_history
         self.device = device
+        self.scale = scale
 
         self.frames = None
         self.actions = None
@@ -45,12 +46,6 @@ class ReplayBuffer(object):
 
         self.frames[self.back] = torch.tensor(frame, device=self.device)
 
-    def replace_last_frame(self, frame):
-        if self.frames == None:
-            self.add_frame(frame)
-        else:
-            self.frames[self.back] = torch.tensor(frame, device=self.device)
-
     def add_action(self, action):
         self.actions[self.back] = action
     
@@ -73,7 +68,7 @@ class ReplayBuffer(object):
                 device=self.device,
             )
             for i in range(self.state_history):
-                state[-(i+1)] = self.frames[index] / 255.0
+                state[-(i+1)] = self.frames[index] / self.scale
 
                 index -= 1
                 if index < 0:
@@ -87,19 +82,10 @@ class ReplayBuffer(object):
         else:
             start = index - self.state_history + 1
             end = index + 1
-            return self.frames[start:end] / 255.0
+            return self.frames[start:end] / self.scale
 
     def get_last_state(self):
         return self._get_state_at_index(self.back)
-
-    def add(self, action, reward, done, next_frame):
-        # add actions, rewards, done before adding the next frame
-        # so that the indexes line up
-        
-        self.add_action(action)
-        self.add_reward(reward)
-        self.add_done(done)
-        self.add_frame(next_frame)
 
     def sample(self, batch_size):
         # when sample is called, the last frame 
@@ -141,10 +127,13 @@ class ReplayBuffer(object):
 
 def test_last_state():
     shape = (84, 84)
-    b = ReplayBuffer(n=8, state_history=4, device=torch.device("cpu"))
+    b = ReplayBuffer(n=8, state_history=4, scale=1, device=torch.device("cpu"))
     
-    b.replace_last_frame(np.full(shape, 1))
-    b.add(1, 1, False, np.full(shape, 2))
+    b.add_frame(np.full(shape, 1))
+    b.add_action(1)
+    b.add_reward(1)
+    b.add_done(False)
+    b.add_frame(np.full(shape, 2))
 
     assert torch.equal(b.get_last_state(), 
                        torch.stack([
@@ -155,9 +144,14 @@ def test_last_state():
                        ],
                        dim=0)
                     )
-    
-    b.add(2, 2, False, np.full(shape, 3))
-    b.add(3, 3, False, np.full(shape, 4))
+    b.add_action(2)
+    b.add_reward(2)
+    b.add_done(False)
+    b.add_frame(np.full(shape, 3))
+    b.add_action(3)
+    b.add_reward(3)
+    b.add_done(False)
+    b.add_frame(np.full(shape, 4))
 
     assert torch.equal(b.get_last_state(), 
                        torch.stack([
@@ -169,7 +163,21 @@ def test_last_state():
                        dim=0)
                     )
 
-    b.add(4, 4, True, np.full(shape, 5))
+    b.add_action(4)
+    b.add_reward(4)
+    b.add_done(True)
+
+    assert torch.equal(b.get_last_state(), 
+                       torch.stack([
+                           torch.full(shape, 1),
+                           torch.full(shape, 2),
+                           torch.full(shape, 3),
+                           torch.full(shape, 4),
+                       ],
+                       dim=0)
+                    )
+
+    b.add_frame(np.full(shape, 5))
     assert torch.equal(b.get_last_state(), 
                        torch.stack([
                            torch.zeros(shape),
@@ -179,67 +187,120 @@ def test_last_state():
                        ],
                        dim=0)
                     )
+    b.add_action(5)
+    b.add_reward(5)
+    b.add_done(False)
+    assert torch.equal(b.get_last_state(), 
+                       torch.stack([
+                           torch.zeros(shape),
+                           torch.zeros(shape),
+                           torch.zeros(shape),
+                           torch.full(shape, 5),
+                       ],
+                       dim=0)
+                    )
+
+    b.add_frame(np.full(shape, 6))
+    b.add_action(6)
+    b.add_reward(6)
+    b.add_done(False)
+
+    b.add_frame(np.full(shape, 7))
+    b.add_action(7)
+    b.add_reward(7)
+    b.add_done(True)
+
+    b.add_frame(np.full(shape, 8))
+    b.add_action(8)
+    b.add_reward(8)
+    b.add_done(False)
     
-    b.replace_last_frame(np.full(shape, 6))
-    b.add(6, 6, False, np.full(shape, 7))
-    b.add(7, 7, False, np.full(shape, 8))
-    b.add(8, 8, True, np.full(shape, 9))
-
     assert torch.equal(b.get_last_state(), 
                        torch.stack([
                            torch.zeros(shape),
                            torch.zeros(shape),
                            torch.zeros(shape),
+                           torch.full(shape, 8),
+                       ],
+                       dim=0)
+                    )
+
+    b.add_frame(np.full(shape, 9))
+    b.add_action(9)
+    b.add_reward(9)
+    b.add_done(False)
+
+    b.add_frame(np.full(shape, 10))
+    b.add_action(10)
+    b.add_reward(10)
+    b.add_done(False)
+
+    assert torch.equal(b.get_last_state(), 
+                       torch.stack([
+                           torch.zeros(shape),
+                           torch.full(shape, 8),
                            torch.full(shape, 9),
+                           torch.full(shape, 10),
                        ],
                        dim=0)
                     )
 
-    b.replace_last_frame(np.full(shape, 10))
-    b.add(10, 10, False, np.full(shape, 11))
-    b.add(11, 11, False, np.full(shape, 12))
+    b.add_frame(np.full(shape, 11))
+    b.add_action(11)
+    b.add_reward(11)
+    b.add_done(False)
+
+    assert torch.equal(b.get_last_state(), 
+                       torch.stack([
+                           torch.full(shape, 8),
+                           torch.full(shape, 9),
+                           torch.full(shape, 10),
+                           torch.full(shape, 11),
+                       ],
+                       dim=0)
+                    )
+
+    b.add_frame(np.full(shape, 12))
+    b.add_action(12)
+    b.add_reward(12)
+    b.add_done(False)
+
+    b.add_frame(np.full(shape, 13))
+    b.add_action(13)
+    b.add_reward(13)
+    b.add_done(False)
+
+    assert torch.equal(b.get_last_state(), 
+                       torch.stack([
+                           torch.full(shape, 10),
+                           torch.full(shape, 11),
+                           torch.full(shape, 12),
+                           torch.full(shape, 13),
+                       ],
+                       dim=0)
+                    )
+
+    b.add_frame(np.full(shape, 14))
+    b.add_action(14)
+    b.add_reward(14)
+    b.add_done(True)
+
+    b.add_frame(np.full(shape, 15))
+    b.add_action(15)
+    b.add_reward(15)
+    b.add_done(False)
+
+    b.add_frame(np.full(shape, 16))
+    b.add_action(16)
+    b.add_reward(16)
+    b.add_done(False)
+
     assert torch.equal(b.get_last_state(), 
                        torch.stack([
                            torch.zeros(shape),
-                           torch.full(shape, 10),
-                           torch.full(shape, 11),
-                           torch.full(shape, 12),
-                       ],
-                       dim=0)
-                    )
-
-    b.add(12, 12, False, np.full(shape, 13))
-    assert torch.equal(b.get_last_state(), 
-                       torch.stack([
-                           torch.full(shape, 10),
-                           torch.full(shape, 11),
-                           torch.full(shape, 12),
-                           torch.full(shape, 13),
-                       ],
-                       dim=0)
-                    )
-
-    b.add(13, 13, False, np.full(shape, 14))
-    b.add(14, 14, False, np.full(shape, 15))
-    assert torch.equal(b.get_last_state(), 
-                       torch.stack([
-                           torch.full(shape, 12),
-                           torch.full(shape, 13),
-                           torch.full(shape, 14),
+                           torch.zeros(shape),
                            torch.full(shape, 15),
-                       ],
-                       dim=0)
-                    )
-
-    b.add(15, 15, True, np.full(shape, 16))
-    b.replace_last_frame(np.full(shape, 17))
-    b.add(17, 17, False, np.full(shape, 18))
-    assert torch.equal(b.get_last_state(), 
-                       torch.stack([
-                           torch.zeros(shape),
-                           torch.zeros(shape),
-                           torch.full(shape, 17),
-                           torch.full(shape, 18),
+                           torch.full(shape, 16),
                        ],
                        dim=0)
                     )
