@@ -32,14 +32,12 @@ class PongWrapper(gym.Wrapper):
         return obs, info
     
     def transform(self, obs):
-        frame = torch.tensor(obs).permute(2, 0, 1)
-
-        transform = transforms.Compose([
-             transforms.ToPILImage(),
-             transforms.Resize((110, 84)),
-             transforms.Grayscale(),
-             transforms.ToTensor(),
-        ])
-
-        frame = transform(frame).squeeze(0)[17:101, :]
-        return frame.numpy()
+        # transpose obs from height, width, channel to channel, height, width
+        obs = np.transpose(obs, (2, 0, 1))
+        # to grey scale
+        obs = (0.299 * obs[0] + 0.587 * obs[1] + 0.114 * obs[2]).astype(np.uint8) 
+        # downsample by 2x
+        obs = obs[::2, ::2]
+        # crop
+        obs= obs[19:99, :]
+        return obs

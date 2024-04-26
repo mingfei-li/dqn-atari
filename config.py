@@ -37,4 +37,4 @@ class Config():
     eps_end            = 0.1
     eps_nsteps         = 1000000
     learning_start     = 50000
-    obs_scale          = 1
+    obs_scale          = 255
