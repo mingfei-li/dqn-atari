@@ -13,16 +13,18 @@ import cProfile
 from statistics import mean, stdev
 import os
 from collections import Counter
+import matplotlib.pyplot as plt
+import random
 
 class Episode():
-    def __init__(self, id, config, n_actions):
+    def __init__(self, id, config: Config, n_actions):
         self.id = id
         self.t = 0
         self.actions = []
         self.q_list = []
         self.epsilons = []
         self.states = []
-        self.obs_list = []
+        self.next_obs_list = []
         self.rewards = []
         self.losses = []
         self.lrs = []
@@ -38,8 +40,8 @@ class Episode():
             self.q_list.append(q)
         self.epsilons.append(eps)
 
-    def update_feedback(self, obs, reward, done):
-        self.obs_list.append(obs)
+    def update_feedback(self, next_obs, reward, done):
+        self.next_obs_list.append(next_obs)
         self.rewards.append(reward)
         self.done = done
     
@@ -51,6 +53,11 @@ class Episode():
 
     def log(self):
         self.log_progress()
+        if self.id % self.config.log_actions_freq == 0:
+            self.log_actions()
+        
+        if self.id % self.config.log_training_freq == 0:
+            self.log_training()
 
     def log_progress(self):
         action_values = [self.q_list[i][self.actions[i]].item() for i in range(len(self.q_list))]
@@ -95,6 +102,58 @@ class Episode():
                 avg_lr,
             ])
 
+    def log_actions(self):
+        n_rows = min(self.config.n_actions_log, len(self.actions))
+        start = random.randint(0, len(self.actions) - n_rows)
+        fig, axes = plt.subplots(n_rows, 5, figsize=(84, 84))
+        for i in range(n_rows):
+            s = start + i
+            state_images = self.states[s].numpy() * self.config.obs_scale
+            assert len(state_images) == 4
+            for j in range(4):
+                axes[i, j].imshow(state_images[j], cmap='gray')
+                axes[i, j].set_title(f"State {s}, obs {j}")
+                axes[i, j].axis("off")
+
+            axes[i, 4].imshow(self.next_obs_list[s], cmap='gray')
+            axes[i, 4].set_title(f"Obs {s+1}, Action {self.actions[s]}")
+            axes[i, 4].axis("off")
+
+        plt.tight_layout()
+        plt.savefig(
+            self.config.log_path + f"action-plots-{self.id}.pdf",
+            format='pdf',
+            bbox_inches='tight',
+        )
+    
+    def log_training(self):
+        sample = random.sample(self.training_info_list, 1)
+        s, a, r, ns, q_a, target = sample[0]
+        n_rows = len(s)
+        fig, axes = plt.subplots(n_rows, 8, figsize=(84, 84))
+        for i in range(n_rows):
+            s_images = s[i].numpy() * self.config.obs_scale
+            ns_images = ns[i].numpy() * self.config.obs_scale
+            for j in range(4):
+                axes[i, j].imshow(s_images[j])
+                axes[i, j].axis("off")
+            for j in range(4, 8):
+                axes[i, j].imshow(ns_images[j - 4])
+                axes[i, j].axis("off")
+            
+            axes[i, 0].set_title(f"action {a[i]}")
+            axes[i, 1].set_title(f"reward {r[i]}")
+            axes[i, 2].set_title(f"q_a {q_a[i]}")
+            axes[i, 3].set_title(f"target {target[i]}")
+
+        plt.tight_layout()
+        plt.savefig(
+            self.config.log_path + f"training-plots-{self.id}.pdf",
+            format='pdf',
+            bbox_inches='tight',
+        )
+
+
 def test():
     config = Config()
     config.batch_size = 3
@@ -108,6 +167,8 @@ def test():
     config.lr_end = 0.001
     config.lr_nsteps = 2000
     config.nsteps_train = 5000
+    config.log_actions_freq  = 1
+    config.log_training_freq  = 1
     play(config, debug=True)
 
 def train():

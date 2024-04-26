@@ -91,8 +91,8 @@ class RLPlayer(object):
         state = self.replay_buffer.get_last_state()
 
         if self.t < self.config.learning_start or random.random() < self.eps:
-            action = self.env.action_space.sample()
             q = None
+            action = self.env.action_space.sample()
             if self.debug:
                 self.logger.debug(f"Taking a random action {action}")
         else:
@@ -201,7 +201,7 @@ class RLPlayer(object):
             self.logger.debug(f"target model after update: {self.target_q_net.state_dict()}")
             self.logger.debug("Finished model training")
 
-        return loss.item(), self.lr, (s, a, r, ns, q_a, target)
+        return loss.item(), self.lr, [s, a, r, ns, q_a, target]
 
 class ConvNet(nn.Module):
     def __init__(self, output_units):

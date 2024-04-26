@@ -17,7 +17,8 @@ class Config():
 
     # logging config
     log_freq          = 50
-    log_episode_freq  = 100000
+    log_actions_freq  = 100000
+    n_actions_log     = 10
     log_training_freq = 100000
 
     # nature paper hyper params
