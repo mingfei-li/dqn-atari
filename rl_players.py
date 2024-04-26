@@ -281,9 +281,10 @@ class RLPlayer(object):
         self.writer.add_histogram("2.histogram.episode.actions", torch.tensor(self.action_summary), self.t)
         self.writer.add_histogram("2.histogram.episode.q", torch.tensor(self.q_summary), self.t)
         self.writer.add_histogram("2.histogram.episode.q_action", torch.tensor(self.q_a_summary), self.t)
-        self.writer.add_histogram("2.histogram.training.q", torch.tensor(self.training_q_summary), self.t)
-        self.writer.add_histogram("2.histogram.training.q_action", torch.tensor(self.training_q_a_summary), self.t)
-        self.writer.add_histogram("2.histogram.training.q_target", torch.tensor(self.q_next_max_summary), self.t)
+        if len(self.training_q_a_summary) > 0:
+            self.writer.add_histogram("2.histogram.training.q", torch.tensor(self.training_q_summary), self.t)
+            self.writer.add_histogram("2.histogram.training.q_action", torch.tensor(self.training_q_a_summary), self.t)
+            self.writer.add_histogram("2.histogram.training.q_target", torch.tensor(self.q_next_max_summary), self.t)
         self.log_model_summary("2.histogram.training.q_net", self.q_net)
         self.log_model_summary("2.histogram.training.target_q_net", self.target_q_net)
         self.writer.flush()
