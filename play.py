@@ -2,8 +2,9 @@ from config import Config
 from episode import Episode
 from rl_players import RLPlayer
 import gymnasium as gym
-from gymnasium.experimental.wrappers import RecordVideoV0, AtariPreprocessingV0
+from gymnasium.experimental.wrappers import RecordVideoV0
 from tqdm import tqdm
+from pong_wrapper import PongWrapper
 import cProfile
 
 def test():
@@ -28,7 +29,7 @@ def train():
 
 def play(config: Config, debug):
     env = gym.make("ALE/Pong-v5", render_mode="rgb_array", frameskip=1)
-    env = AtariPreprocessingV0(env, noop_max=0)
+    env = PongWrapper(env, skip_frame=config.skip_frame)
     env = RecordVideoV0(env, config.record_path)
 
     player = RLPlayer(env, config, debug)
@@ -55,5 +56,5 @@ def play(config: Config, debug):
     env.close()
 
 if __name__ == "__main__":
-    test()
-    # cProfile.run("train()", "results/logs/perf_stats_training.log")
+    train()
+    # cProfile.run("train()", "perf_stats_training.log")

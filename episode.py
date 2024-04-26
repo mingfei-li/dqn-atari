@@ -69,7 +69,7 @@ class Episode():
         action_distr_log += "]"
 
         tqdm.write(f"Episode {self.id:6d} | "
-                    f"t = {self.t: 4d} | "
+                    f"t = {self.t:5d} | "
                     f"avg_q = {avg_action_value:8.5f} | "
                     f"stdev_q = {stdev_action_value:8.5f} | "
                     f"avg_eps = {avg_eps:5.3f} | "
@@ -126,10 +126,10 @@ class Episode():
             s_images = s[i].numpy() * self.config.obs_scale
             ns_images = ns[i].numpy() * self.config.obs_scale
             for j in range(4):
-                axes[i, j].imshow(s_images[j], cmap=['gray'])
+                axes[i, j].imshow(s_images[j], cmap='gray')
                 axes[i, j].axis("off")
             for j in range(4, 8):
-                axes[i, j].imshow(ns_images[j-4], cmap=['gray'])
+                axes[i, j].imshow(ns_images[j-4], cmap='gray')
                 axes[i, j].axis("off")
             
             axes[i, 0].set_title(f"action {a[i]}")

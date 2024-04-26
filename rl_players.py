@@ -86,6 +86,7 @@ class RLPlayer(object):
             self.logger.debug(f"=======================================================")
             self.logger.debug(f"    Kicking off update: {self.t}")
             self.logger.debug(f"=======================================================")
+            self.logger.debug(f"Getting action for obs {obs}")
 
         self.replay_buffer.add_frame(obs)
         state = self.replay_buffer.get_last_state()

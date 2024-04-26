@@ -22,7 +22,7 @@ class ReplayBuffer(object):
     def initialize_buffer(self, shape):
         self.frames = torch.zeros(
             (self.n,) + shape,
-            dtype=torch.uint8,
+            dtype=torch.float,
             device=self.device,
         )
         self.actions = torch.zeros(
