@@ -13,9 +13,9 @@ class RLPlayer(object):
         self.env = env
         self.config = config
         if torch.cuda.is_available():
-            self.device = torch.device("cuda")  # Use a GPU device
+            self.device = torch.device("cuda")
         else:
-            self.device = torch.device("cpu")  # Fallback to CPU if necessary
+            self.device = torch.device("cpu")
         self.init_models(config.model_path)
 
         self.debug = debug
