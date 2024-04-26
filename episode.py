@@ -55,6 +55,7 @@ class Episode():
         avg_action_value = 0 if len(action_values) == 0 else mean(action_values)
         stdev_action_value = 0 if len(action_values) == 0 else stdev(action_values)
         avg_eps = mean(self.epsilons)
+        exp_rate = 1 - float(len(self.q_list)) / len(self.actions)
         total_reward = sum(self.rewards)
 
         avg_loss = 0 if len(self.losses) == 0 else mean(self.losses)
@@ -73,6 +74,7 @@ class Episode():
                     f"avg_q = {avg_action_value:8.5f} | "
                     f"stdev_q = {stdev_action_value:8.5f} | "
                     f"avg_eps = {avg_eps:5.3f} | "
+                    f"exp_rate = {exp_rate:5.3f} | "
                     f"reward = {total_reward:2.0f} | "
                     f"avg_loss = {avg_loss:8.5f} | "
                     f"avg_lr = {avg_lr:8.5f} | "

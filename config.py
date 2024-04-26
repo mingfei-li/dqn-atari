@@ -8,7 +8,7 @@ class Config():
     # model and training config
     num_episodes_test = 50
     grad_clip         = True
-    clip_val          = 1
+    clip_val          = 10
     saving_freq       = 250000
 
     eval_freq         = 250000
@@ -17,12 +17,12 @@ class Config():
 
     # logging config
     log_freq          = 50
-    log_actions_freq  = 100000
+    log_actions_freq  = 1000
     n_actions_log     = 10
-    log_training_freq = 100000
+    log_training_freq = 1000
 
     # nature paper hyper params
-    nsteps_train       = 50_000_000
+    nsteps_train       = 5_000_000
     batch_size         = 32
     buffer_size        = 1000000
     target_update_freq = 10000
@@ -31,7 +31,7 @@ class Config():
     state_history      = 4
     skip_frame         = 4
     lr_begin           = 0.00025
-    lr_end             = 0.00025
+    lr_end             = 0.00005
     lr_nsteps          = nsteps_train/2
     eps_begin          = 1
     eps_end            = 0.1
