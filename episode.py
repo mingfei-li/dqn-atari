@@ -51,9 +51,11 @@ class Episode():
             self.log_training()
 
     def log_progress(self):
-        action_values = [self.q_list[i][self.actions[i]].item() for i in range(len(self.q_list))]
-        avg_action_value = 0 if len(action_values) == 0 else mean(action_values)
-        stdev_action_value = 0 if len(action_values) == 0 else stdev(action_values)
+        q_values = [self.q_list[i][self.actions[i]].item() for i in range(len(self.q_list))]
+        avg_q = 0 if len(q_values) == 0 else mean(q_values)
+        stdev_q = 0 if len(q_values) == 0 else stdev(q_values)
+        min_q = 0 if len(q_values) == 0 else min(q_values)
+        max_q = 0 if len(q_values) == 0 else max(q_values)
         avg_eps = mean(self.epsilons)
         exp_rate = 1 - float(len(self.q_list)) / len(self.actions)
         total_reward = sum(self.rewards)
@@ -71,8 +73,10 @@ class Episode():
 
         tqdm.write(f"Episode {self.id:6d} | "
                     f"t = {self.t:5d} | "
-                    f"avg_q = {avg_action_value:8.5f} | "
-                    f"stdev_q = {stdev_action_value:8.5f} | "
+                    f"avg_q = {avg_q:8.5f} | "
+                    f"stdev_q = {stdev_q:8.5f} | "
+                    f"min_q = {min_q:8.5f} | "
+                    f"max_q = {max_q:8.5f} | "
                     f"avg_eps = {avg_eps:5.3f} | "
                     f"exp_rate = {exp_rate:5.3f} | "
                     f"reward = {total_reward:2.0f} | "
@@ -87,8 +91,8 @@ class Episode():
             writer.writerow([
                 self.id,
                 self.t,
-                avg_action_value,
-                stdev_action_value,
+                avg_q,
+                stdev_q,
                 avg_eps,
                 total_reward,
                 avg_loss,

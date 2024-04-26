@@ -16,10 +16,13 @@ class Config():
     soft_epsilon      = 0.05
 
     # logging config
-    log_freq          = 50
+    log_freq          = 1
     log_actions_freq  = 1000
     n_actions_log     = 10
     log_training_freq = 1000
+    log_scalar_freq   = 1000
+    log_histogram_freq = 5000
+    log_window        = 2000
 
     # nature paper hyper params
     nsteps_train       = 5_000_000

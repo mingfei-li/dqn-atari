@@ -6,3 +6,5 @@ __pycache__/players.cpython-310.pyc
 /models
 /videos
 /results
+.DS_Store
+*.log

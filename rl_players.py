@@ -1,4 +1,5 @@
 from config import Config
+from collections import deque
 from replay_buffer import ReplayBuffer
 import datetime
 import logging
@@ -6,6 +7,8 @@ import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from statistics import mean
+from torch.utils.tensorboard import SummaryWriter
 import os
 
 class RLPlayer(object):
@@ -22,6 +25,8 @@ class RLPlayer(object):
         if self.debug:
             self.init_logger(config.log_path)
 
+        self.init_log_summary()
+
         self.replay_buffer = ReplayBuffer(
             n=self.config.buffer_size,
             state_history=self.config.state_history,
@@ -32,6 +37,8 @@ class RLPlayer(object):
         self.t = 0
         self.eps = self.config.eps_begin
         self.lr = self.config.lr_begin
+
+        self.writer = SummaryWriter(log_dir=config.log_path + "/tb_logs/")
 
         if self.debug:
             self.logger.debug(f"config: {config.__dict__}")
@@ -70,6 +77,24 @@ class RLPlayer(object):
 
         self.q_net = ConvNet(self.env.action_space.n).to(self.device)
         self.target_q_net = ConvNet(self.env.action_space.n).to(self.device)
+        self.target_q_net.load_state_dict(self.q_net.state_dict())
+
+    def init_log_summary(self):
+        # action summary
+        self.action_summary = deque(maxlen=self.config.log_window)
+        self.q_summary = deque(maxlen=self.config.log_window)
+        self.q_a_summary = deque(maxlen=self.config.log_window)
+
+        # reward summary
+        self.reward_summary = deque(maxlen=self.config.log_window)
+
+        # training summary
+        self.loss_summary = deque(maxlen=self.config.log_window)
+        self.grad_norm_summary = deque(maxlen=self.config.log_window)
+        self.training_q_summary = deque(maxlen=self.config.log_window)
+        self.training_q_a_summary = deque(maxlen=self.config.log_window)
+        self.q_next_max_summary = deque(maxlen=self.config.log_window)
+        self.target_summary = deque(maxlen=self.config.log_window)
     
     def update_eps(self):
         self.eps += (self.config.eps_end - self.config.eps_begin) / self.config.eps_nsteps
@@ -82,24 +107,26 @@ class RLPlayer(object):
             self.lr = self.config.lr_end
 
     def get_action(self, obs):
+        self.t += 1
+
         if self.debug:
             self.logger.debug(f"=======================================================")
-            self.logger.debug(f"    Kicking off update: {self.t}")
+            self.logger.debug(f"    Kicking off step: {self.t}")
             self.logger.debug(f"=======================================================")
             self.logger.debug(f"Getting action for obs {obs}")
 
         self.replay_buffer.add_frame(obs)
         state = self.replay_buffer.get_last_state()
 
+        self.q_net.eval()
+        with torch.no_grad():
+            q = self.q_net(torch.unsqueeze(state, dim=0))[0]
+
         if self.t < self.config.learning_start or random.random() < self.eps:
-            q = None
             action = self.env.action_space.sample()
             if self.debug:
                 self.logger.debug(f"Taking a random action {action}")
         else:
-            self.q_net.eval()
-            with torch.no_grad():
-                q = self.q_net(torch.unsqueeze(state, dim=0))[0]
             action = torch.argmax(q, dim=0).item()
             if self.debug:
                 self.logger.debug(f"Applied Q-Net in action selection")
@@ -108,10 +135,17 @@ class RLPlayer(object):
                 self.logger.debug(f"Action: {action}")
                 self.logger.debug(f"Action value: {q[action]}")
 
+        if self.t % self.config.log_freq == 0:
+            self.action_summary.append(action)
+            self.q_a_summary.append(q[action].item())
+            self.q_summary.extend(q.tolist())
+        
         return state, action, q, self.eps
-    
+
     def update(self, action, reward, done):
-        self.t += 1
+        if self.t % self.config.log_freq == 0:
+            self.reward_summary.append(reward)
+
         self.replay_buffer.add_action(action)
         self.replay_buffer.add_reward(reward)
         self.replay_buffer.add_done(done)
@@ -121,9 +155,14 @@ class RLPlayer(object):
 
         loss, lr, training_info = self.train()
 
+        if self.t % self.config.log_scalar_freq == 0:
+            self.log_scalar_summary()
+
+        if self.t % self.config.log_histogram_freq == 0:
+            self.log_histogram_summary()
+
         self.update_eps()
         self.update_lr()
-
         return loss, lr, training_info
 
     def train(self):
@@ -182,10 +221,27 @@ class RLPlayer(object):
             )
         optimizer.step()
 
+        grad_norm = 0
+        for p in self.q_net.parameters():
+            param_norm = p.grad.data.norm(2)
+            grad_norm += param_norm.item() ** 2
+        grad_norm = grad_norm ** 0.5
+
+        if self.t % self.config.log_freq == 0:
+            self.loss_summary.append(loss.item())
+            self.training_q_summary.extend(q.view(-1).tolist())
+            self.training_q_a_summary.extend(q_a.tolist())
+            self.q_next_max_summary.extend(q_next_max.tolist())
+            self.target_summary.extend(target.tolist())
+            self.grad_norm_summary.append(grad_norm)
+
         if self.t % self.config.target_update_freq == 0:
+            self.q_net.eval()
+            self.target_q_net.eval()
             self.target_q_net.load_state_dict(self.q_net.state_dict())
 
         if self.t % self.config.saving_freq == 0:
+            self.q_net.eval()
             torch.save(
                 self.q_net.state_dict(),
                 self.config.model_path + f"model-checkpoint-{self.t}.pt",
@@ -203,6 +259,38 @@ class RLPlayer(object):
             self.logger.debug("Finished model training")
 
         return loss.item(), self.lr, [s, a, r, ns, q_a, target]
+
+    def log_scalar_summary(self):
+        self.writer.add_scalar("1.scalar.episode.rewards.sum", sum(self.reward_summary), self.t)
+        self.writer.add_scalar("1.scalar.episode.q.avg", mean(self.q_summary), self.t)
+        self.writer.add_scalar("1.scalar.episode.q_action.avg", mean(self.q_a_summary), self.t)
+        self.writer.add_scalar("1.scalar.episode.epsilon", self.eps, self.t)
+
+        if len(self.loss_summary) > 0:
+            self.writer.add_scalar("1.scalar.training.loss.avg", mean(self.loss_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.q.avg", mean(self.training_q_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.q_action.avg", mean(self.training_q_a_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.q_target.avg", mean(self.q_next_max_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.target.avg", mean(self.target_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.lr", self.lr, self.t)
+            self.writer.add_scalar("1.scalar.training.grad_norm.avg", mean(self.grad_norm_summary), self.t)
+
+        self.writer.flush()
+
+    def log_histogram_summary(self):
+        self.writer.add_histogram("2.histogram.episode.actions", torch.tensor(self.action_summary), self.t)
+        self.writer.add_histogram("2.histogram.episode.q", torch.tensor(self.q_summary), self.t)
+        self.writer.add_histogram("2.histogram.episode.q_action", torch.tensor(self.q_a_summary), self.t)
+        self.writer.add_histogram("2.histogram.training.q", torch.tensor(self.training_q_summary), self.t)
+        self.writer.add_histogram("2.histogram.training.q_action", torch.tensor(self.training_q_a_summary), self.t)
+        self.writer.add_histogram("2.histogram.training.q_target", torch.tensor(self.q_next_max_summary), self.t)
+        self.log_model_summary("2.histogram.training.q_net", self.q_net)
+        self.log_model_summary("2.histogram.training.target_q_net", self.target_q_net)
+        self.writer.flush()
+
+    def log_model_summary(self, model_name, model):
+        for name, param in model.named_parameters():
+            self.writer.add_histogram(f"{model_name}." + name, param, self.t)
 
 class ConvNet(nn.Module):
     def __init__(self, output_units):

@@ -6,3 +6,4 @@ gymnasium[atari]
 gymnasium[accept-rom-license]
 gymnasium[other]
 tqdm
+tensorboard
