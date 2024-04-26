@@ -22,7 +22,7 @@ class ReplayBuffer(object):
     def initialize_buffer(self, shape):
         self.frames = torch.zeros(
             (self.n,) + shape,
-            dtype=torch.float,
+            dtype=torch.float16,
             device=self.device,
         )
         self.actions = torch.zeros(
@@ -78,11 +78,11 @@ class ReplayBuffer(object):
                         break
                 if self.done[index]:
                     break
-            return state
+            return state.float()
         else:
             start = index - self.state_history + 1
             end = index + 1
-            return self.frames[start:end] / self.scale
+            return self.frames[start:end].float() / self.scale
 
     def get_last_state(self):
         return self._get_state_at_index(self.back)
