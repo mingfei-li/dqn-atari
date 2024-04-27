@@ -222,6 +222,8 @@ class RLPlayer(object):
         optimizer = torch.optim.RMSprop(
             params=self.q_net.parameters(),
             lr=self.lr,
+            alpha=0.95,
+            eps=0.01,
         )
         optimizer.zero_grad()
         loss.backward()
