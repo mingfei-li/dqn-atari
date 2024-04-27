@@ -3,8 +3,8 @@ from episode import Episode
 from rl_players import RLPlayer
 import gymnasium as gym
 from gymnasium.experimental.wrappers import RecordVideoV0
-from tqdm import tqdm
 from pong_wrapper import PongWrapper
+from tqdm import tqdm
 import cProfile
 
 def test():
@@ -22,6 +22,7 @@ def test():
     config.nsteps_train = 5000
     config.log_actions_freq  = 1
     config.log_training_freq  = 1
+    config.eval_freq = 500
     play(config, debug=True)
 
 def train():
