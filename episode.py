@@ -43,6 +43,7 @@ class Episode():
             self.training_info_list.append(training_info)
 
     def log(self):
+        return
         self.log_progress()
         if self.id % self.config.log_actions_freq == 0:
             self.log_actions()

@@ -8,7 +8,7 @@ class Config():
     # model and training config
     num_episodes_test = 50
     grad_clip         = True
-    clip_val          = 0.25
+    clip_val          = 10
     saving_freq       = 250000
 
     eval_freq         = 250_000
