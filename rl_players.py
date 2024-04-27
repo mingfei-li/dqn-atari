@@ -35,6 +35,7 @@ class RLPlayer(object):
         )
 
         self.t = 0
+        self.episode_reward = 0
         self.eps = self.config.eps_begin
         self.lr = self.config.lr_begin
 
@@ -87,6 +88,7 @@ class RLPlayer(object):
 
         # reward summary
         self.reward_summary = deque(maxlen=self.config.log_window)
+        self.episode_reward_summary = deque(maxlen=self.config.log_window // 100)
 
         # training summary
         self.loss_summary = deque(maxlen=self.config.log_window)
@@ -143,9 +145,6 @@ class RLPlayer(object):
         return state, action, q, self.eps
 
     def update(self, action, reward, done):
-        if self.t % self.config.log_freq == 0:
-            self.reward_summary.append(reward)
-
         self.replay_buffer.add_action(action)
         self.replay_buffer.add_reward(reward)
         self.replay_buffer.add_done(done)
@@ -155,9 +154,15 @@ class RLPlayer(object):
 
         loss, lr, training_info = self.train()
 
+        self.episode_reward += reward
+        if done:
+            self.episode_reward_summary.append(self.episode_reward)
+            self.episode_reward = 0
+        if self.t % self.config.log_freq == 0:
+            self.reward_summary.append(reward)
+
         if self.t % self.config.log_scalar_freq == 0:
             self.log_scalar_summary()
-
         if self.t % self.config.log_histogram_freq == 0:
             self.log_histogram_summary()
 
@@ -261,24 +266,45 @@ class RLPlayer(object):
         return loss.item(), self.lr, [s, a, r, ns, q_a, target]
 
     def log_scalar_summary(self):
-        self.writer.add_scalar("1.scalar.episode.rewards.sum", sum(self.reward_summary), self.t)
+        if len(self.episode_reward_summary) > 0:
+            self.writer.add_scalar("00.scalar.episode.episode_reward.avg", mean(self.episode_reward_summary), self.t)
+            self.writer.add_scalar("01.scalar.episode.episode_reward.min", min(self.episode_reward_summary), self.t)
+            self.writer.add_scalar("01.scalar.episode.episode_reward.max", max(self.episode_reward_summary), self.t)
+        self.writer.add_scalar("1.scalar.episode.reward.avg", mean(self.reward_summary), self.t)
         self.writer.add_scalar("1.scalar.episode.q.avg", mean(self.q_summary), self.t)
+        self.writer.add_scalar("1.scalar.episode.q.min", min(self.q_summary), self.t)
+        self.writer.add_scalar("1.scalar.episode.q.max", max(self.q_summary), self.t)
         self.writer.add_scalar("1.scalar.episode.q_action.avg", mean(self.q_a_summary), self.t)
+        self.writer.add_scalar("1.scalar.episode.q_action.min", min(self.q_a_summary), self.t)
+        self.writer.add_scalar("1.scalar.episode.q_action.max", max(self.q_a_summary), self.t)
         self.writer.add_scalar("1.scalar.episode.epsilon", self.eps, self.t)
 
         if len(self.loss_summary) > 0:
             self.writer.add_scalar("1.scalar.training.loss.avg", mean(self.loss_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.loss.min", min(self.loss_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.loss.max", max(self.loss_summary), self.t)
             self.writer.add_scalar("1.scalar.training.q.avg", mean(self.training_q_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.q.min", min(self.training_q_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.q.max", max(self.training_q_summary), self.t)
             self.writer.add_scalar("1.scalar.training.q_action.avg", mean(self.training_q_a_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.q_action.min", min(self.training_q_a_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.q_action.max", max(self.training_q_a_summary), self.t)
             self.writer.add_scalar("1.scalar.training.q_target.avg", mean(self.q_next_max_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.q_target.min", min(self.q_next_max_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.q_target.max", max(self.q_next_max_summary), self.t)
             self.writer.add_scalar("1.scalar.training.target.avg", mean(self.target_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.target.min", min(self.target_summary), self.t)
+            self.writer.add_scalar("1.scalar.training.target.max", max(self.target_summary), self.t)
+            self.writer.add_scalar("00.scalar.training.grad_norm.avg", mean(self.grad_norm_summary), self.t)
+            self.writer.add_scalar("01.scalar.training.grad_norm.min", min(self.grad_norm_summary), self.t)
+            self.writer.add_scalar("01.scalar.training.grad_norm.max", max(self.grad_norm_summary), self.t)
             self.writer.add_scalar("1.scalar.training.lr", self.lr, self.t)
-            self.writer.add_scalar("1.scalar.training.grad_norm.avg", mean(self.grad_norm_summary), self.t)
 
         self.writer.flush()
 
     def log_histogram_summary(self):
         self.writer.add_histogram("2.histogram.episode.actions", torch.tensor(self.action_summary), self.t)
+        self.writer.add_histogram("2.histogram.episode.rewards", torch.tensor(self.reward_summary), self.t)
         self.writer.add_histogram("2.histogram.episode.q", torch.tensor(self.q_summary), self.t)
         self.writer.add_histogram("2.histogram.episode.q_action", torch.tensor(self.q_a_summary), self.t)
         if len(self.training_q_a_summary) > 0:
