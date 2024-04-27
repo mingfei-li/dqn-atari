@@ -219,7 +219,7 @@ class RLPlayer(object):
         q_a = q[torch.arange(q.size(0)), a]
         loss = nn.MSELoss()(q_a, target)
 
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.RMSprop(
             params=self.q_net.parameters(),
             lr=self.lr,
         )
@@ -232,18 +232,18 @@ class RLPlayer(object):
             )
         optimizer.step()
 
-        grad_norm = 0
-        for p in self.q_net.parameters():
-            param_norm = p.grad.data.norm(2)
-            grad_norm += param_norm.item() ** 2
-        grad_norm = grad_norm ** 0.5
-
         if self.t % self.config.log_freq == 0:
             self.loss_summary.append(loss.item())
             self.training_q_summary.extend(q.view(-1).tolist())
             self.training_q_a_summary.extend(q_a.tolist())
             self.q_next_max_summary.extend(q_next_max.tolist())
             self.target_summary.extend(target.tolist())
+
+            grad_norm = 0
+            for p in self.q_net.parameters():
+                param_norm = p.grad.data.norm(2)
+                grad_norm += param_norm.item() ** 2
+            grad_norm = grad_norm ** 0.5
             self.grad_norm_summary.append(grad_norm)
 
         if self.t % self.config.target_update_freq == 0:
