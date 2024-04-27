@@ -335,7 +335,7 @@ class RLPlayer(object):
             if self.debug:
                 self.logger.debug(f"Evaluated one episode. Reward: {episode_reward}")
 
-        self.writer.add_scalar("0.scaler.eval.episode_reward.avg", mean(episode_reward_summary, self.t))
+        self.writer.add_scalar("0.scaler.eval.episode_reward.avg", mean(episode_reward_summary), self.t)
         self.writer.add_scalar("1.scaler.eval.episode_reward.min", min(episode_reward_summary), self.t)
         self.writer.add_scalar("1.scaler.eval.episode_reward.max", max(episode_reward_summary), self.t)
         self.writer.add_scalar("2.scalar.eval.reward.avg", mean(reward_summary), self.t)
