@@ -217,7 +217,7 @@ class RLPlayer(object):
         self.q_net.train()
         q = self.q_net(s)
         q_a = q[torch.arange(q.size(0)), a]
-        loss = nn.MSELoss()(q_a, target)
+        loss = nn.HuberLoss()(q_a, target)
 
         optimizer = torch.optim.RMSprop(
             params=self.q_net.parameters(),
