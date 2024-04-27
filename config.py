@@ -8,7 +8,7 @@ class Config():
     # model and training config
     num_episodes_test = 50
     grad_clip         = True
-    clip_val          = 3
+    clip_val          = 1
     saving_freq       = 250000
 
     eval_freq         = 250_000
@@ -34,7 +34,7 @@ class Config():
     state_history      = 4
     skip_frame         = 4
     lr_begin           = 0.00025
-    lr_end             = 0.00005
+    lr_end             = 0.00025
     lr_nsteps          = nsteps_train/2
     eps_begin          = 1
     eps_end            = 0.1
