@@ -11,7 +11,7 @@ class Config():
     clip_val          = 0.1
     saving_freq       = 250000
 
-    eval_freq         = 50_000
+    eval_freq         = 250_000
     record_freq       = 250_000
     soft_epsilon      = 0.05
 
