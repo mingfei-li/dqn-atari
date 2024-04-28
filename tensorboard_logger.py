@@ -3,6 +3,7 @@ from collections import deque
 import numpy as np
 from statistics import mean
 import torch
+from torchvision.utils import make_grid
 
 class TensorboardLogger():
     def __init__(self, config):
@@ -63,12 +64,13 @@ class TensorboardLogger():
 
     def log_training_images(self, s, ns, a, r, t):
         for idx in range(s.shape[0]):
-            images = np.concatenate([s[idx].numpy(), ns[idx].numpy()], axis=0)
+            images = torch.cat([s[idx], ns[idx]], dim=0)
             images = images * self.config.obs_scale
-            images = np.expand_dims(images.astype(np.uint8), axis=1)
-            self.writer.add_images(
+            images = torch.unsqueeze(images.int(), dim=1)
+            grid = make_grid(images, self.config.state_history)
+            self.writer.add_image(
                 f"training.{t}.images.{idx}.action.{a[idx]}.reward.{r[idx]}",
-                images,
+                grid,
                 t,
             )
         self.writer.flush()
@@ -145,11 +147,13 @@ class TensorboardLogger():
     
     def log_image_summary(self, t):
         images = np.expand_dims(np.stack(self.obs_summary, axis=0), axis=1)
+        images = torch.tensor(images)
         actions = '_'.join(map(str, list(self.action_summary)[-8:]))
         rewards = '_'.join(map(str, list(self.reward_summary)[-8:]))
-        self.writer.add_images(
+        grid = make_grid(images, self.config.state_history)
+        self.writer.add_image(
             f"episode.{t}.images.actions.{actions}.rewards.{rewards}",
-            images,
+            grid,
             t,
         )
         self.writer.flush()

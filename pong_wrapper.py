@@ -39,5 +39,5 @@ class AtariWrapper(gym.Wrapper):
         # downsample by 2x
         obs = obs[::2, ::2]
         # crop
-        obs= obs[20:100, :]
+        obs= obs[17:97, :]
         return obs
