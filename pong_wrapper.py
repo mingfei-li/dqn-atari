@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 
 from collections import deque
 
-class PongWrapper(gym.Wrapper):
+class AtariWrapper(gym.Wrapper):
     def __init__(self, env, skip_frame=4):
         super().__init__(env)
         self.skip_frame = skip_frame
@@ -33,11 +33,11 @@ class PongWrapper(gym.Wrapper):
     
     def transform(self, obs):
         # transpose obs from height, width, channel to channel, height, width
-        obs = np.transpose(obs, (2, 0, 1))
+        # obs = np.transpose(obs, (2, 0, 1))
         # to grey scale
-        obs = (0.299 * obs[0] + 0.587 * obs[1] + 0.114 * obs[2]).astype(np.uint8) 
+        # obs = (0.299 * obs[0] + 0.587 * obs[1] + 0.114 * obs[2]).astype(np.uint8) 
         # downsample by 2x
         obs = obs[::2, ::2]
         # crop
-        obs= obs[19:99, :]
+        obs= obs[20:100, :]
         return obs
