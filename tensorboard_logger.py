@@ -11,7 +11,7 @@ class TensorboardLogger():
         self.writer = SummaryWriter(log_dir=self.config.log_path)
         # action summary
         self.action_summary = deque(maxlen=self.config.log_window)
-        self.obs_summary = deque(maxlen=20)
+        self.obs_summary = deque(maxlen=200)
         self.q_summary = deque(maxlen=self.config.log_window)
         self.q_a_summary = deque(maxlen=self.config.log_window)
 
@@ -156,7 +156,7 @@ class TensorboardLogger():
         images = torch.tensor(images)
         actions = '_'.join(map(str, list(self.action_summary)[-8:]))
         rewards = '_'.join(map(str, list(self.reward_summary)[-8:]))
-        grid = make_grid(images, self.config.state_history)
+        grid = make_grid(images, 20)
         self.writer.add_image(
             f"episode.{t}.images.actions.{actions}.rewards.{rewards}",
             grid,
