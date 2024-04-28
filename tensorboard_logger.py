@@ -64,13 +64,8 @@ class TensorboardLogger():
 
     def log_training_images(self, s, ns, a, r, t):
         for idx in range(s.shape[0]):
-            # s_img = s[idx].numpy()
-            # ns_img = ns[idx].numpy()
-            # images = np.expand_dims(np.stack([s_img, ns_img], axis=0), axis=1)
-            # images = (images * self.config.obs_scale).astype(np.uint8)
-            
             images = torch.cat([s[idx], ns[idx]], dim=0).unsqueeze(1)
-            grid = make_grid(torch.tensor(images), self.config.state_history)
+            grid = make_grid(images, self.config.state_history)
             self.writer.add_image(
                 f"training.{t}.images.{idx}.action.{a[idx]}.reward.{r[idx]}",
                 grid,
