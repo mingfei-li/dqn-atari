@@ -23,7 +23,7 @@ class Config():
     log_scalar_freq   = 1000
     log_histogram_freq = 5000
     log_window        = 20000
-    log_image_freq    = 3000
+    log_image_freq    = 30000
 
     # nature paper hyper params
     nsteps_train       = 5_000_000
