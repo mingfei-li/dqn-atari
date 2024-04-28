@@ -219,10 +219,10 @@ class RLPlayer(object):
         q_a = q[torch.arange(q.size(0)), a]
         loss = nn.HuberLoss()(q_a, target)
 
-        optimizer = torch.optim.RMSprop(
+        optimizer = torch.optim.Adam(
             params=self.q_net.parameters(),
             lr=self.lr,
-            alpha=0.9,
+            betas=(0.95, 0.95),
             eps=0.01,
         )
         optimizer.zero_grad()
@@ -358,7 +358,7 @@ class RLPlayer(object):
             self.writer.add_scalar("0.scalar.episode.episode_reward.avg", mean(self.episode_reward_summary), self.t)
             self.writer.add_scalar("1.scalar.episode.episode_reward.min", min(self.episode_reward_summary), self.t)
             self.writer.add_scalar("1.scalar.episode.episode_reward.max", max(self.episode_reward_summary), self.t)
-        self.writer.add_scalar("2.scalar.episode.reward.avg", mean(self.reward_summary), self.t)
+        self.writer.add_scalar("2.scalar.episode.reward.sum", sum(self.reward_summary), self.t)
         self.writer.add_scalar("2.scalar.episode.q.avg", mean(self.q_summary), self.t)
         self.writer.add_scalar("2.scalar.episode.q.min", min(self.q_summary), self.t)
         self.writer.add_scalar("2.scalar.episode.q.max", max(self.q_summary), self.t)
