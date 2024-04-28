@@ -11,7 +11,7 @@ class TensorboardLogger():
         self.writer = SummaryWriter(log_dir=self.config.log_path)
         # action summary
         self.action_summary = deque(maxlen=self.config.log_window)
-        self.obs_summary = deque(maxlen=8)
+        self.obs_summary = deque(maxlen=20)
         self.q_summary = deque(maxlen=self.config.log_window)
         self.q_a_summary = deque(maxlen=self.config.log_window)
 
