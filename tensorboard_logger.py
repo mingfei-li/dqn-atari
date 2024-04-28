@@ -70,9 +70,6 @@ class TensorboardLogger():
             # images = (images * self.config.obs_scale).astype(np.uint8)
             
             images = torch.cat([s[idx], ns[idx]], dim=0).unsqueeze(1)
-            torch.set_printoptions(threshold=8 * 80 * 80)
-            print(images.shape)
-            print(images)
             grid = make_grid(torch.tensor(images), self.config.state_history)
             self.writer.add_image(
                 f"training.{t}.images.{idx}.action.{a[idx]}.reward.{r[idx]}",
