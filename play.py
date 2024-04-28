@@ -8,7 +8,7 @@ import cProfile
 
 def play():
     config = Config()
-    env = gym.make("PongNoFrameskip-v4", render_mode="rgb_array", obs_type="grayscale")
+    env = gym.make("BreakoutNoFrameskip-v4", render_mode="rgb_array", obs_type="grayscale")
     env = AtariWrapper(env, skip_frame=config.skip_frame)
     env = RecordVideoV0(env, config.record_path)
     player = RLPlayer(env, config)
