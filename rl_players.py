@@ -13,6 +13,7 @@ import torch.nn.functional as F
 from statistics import mean
 from torch.utils.tensorboard import SummaryWriter
 import os
+import numpy as np
 
 class RLPlayer(object):
     def __init__(self, env, config: Config, debug=False):
@@ -38,6 +39,7 @@ class RLPlayer(object):
         )
 
         self.t = 0
+        self.last_episode_end_t = 0
         self.episode_reward = 0
         self.eps = self.config.eps_begin
         self.lr = self.config.lr_begin
@@ -86,12 +88,14 @@ class RLPlayer(object):
     def init_log_summary(self):
         # action summary
         self.action_summary = deque(maxlen=self.config.log_window)
+        self.obs_summary = deque(maxlen=8)
         self.q_summary = deque(maxlen=self.config.log_window)
         self.q_a_summary = deque(maxlen=self.config.log_window)
 
         # reward summary
         self.reward_summary = deque(maxlen=self.config.log_window)
-        self.episode_reward_summary = deque(maxlen=self.config.log_window // 100)
+        self.episode_reward_summary = deque(maxlen=self.config.log_window // 500)
+        self.episode_length_summary = deque(maxlen=self.config.log_window // 500)
 
         # training summary
         self.loss_summary = deque(maxlen=self.config.log_window)
@@ -100,7 +104,7 @@ class RLPlayer(object):
         self.training_q_a_summary = deque(maxlen=self.config.log_window)
         self.q_next_max_summary = deque(maxlen=self.config.log_window)
         self.target_summary = deque(maxlen=self.config.log_window)
-    
+
     def update_eps(self):
         self.eps += (self.config.eps_end - self.config.eps_begin) / self.config.eps_nsteps
         if self.t >= self.config.eps_nsteps:
@@ -142,6 +146,7 @@ class RLPlayer(object):
 
         if self.t % self.config.log_freq == 0:
             self.action_summary.append(action)
+            self.obs_summary.append(obs)
             self.q_a_summary.append(q[action].item())
             self.q_summary.extend(q.tolist())
         
@@ -160,7 +165,9 @@ class RLPlayer(object):
         self.episode_reward += reward
         if done:
             self.episode_reward_summary.append(self.episode_reward)
+            self.episode_length_summary.append(self.t - self.last_episode_end_t)
             self.episode_reward = 0
+            self.last_episode_end_t = self.t
         if self.t % self.config.log_freq == 0:
             self.reward_summary.append(reward)
 
@@ -168,6 +175,8 @@ class RLPlayer(object):
             self.log_scalar_summary()
         if self.t % self.config.log_histogram_freq == 0:
             self.log_histogram_summary()
+        if self.t % self.config.log_image_freq == 0:
+            self.log_image_summary()
 
         if self.t % self.config.eval_freq == 0:
             self.evaluate()
@@ -259,6 +268,17 @@ class RLPlayer(object):
                 self.q_net.state_dict(),
                 self.config.model_path + f"model-checkpoint-{self.t}.pt",
             )
+        if self.t % self.config.log_image_freq == 0:
+            for idx in range(s.shape[0]):
+                images = np.concatenate([s[idx].numpy(), ns[idx].numpy()], axis=0)
+                images = images * self.config.obs_scale
+                images = np.expand_dims(images.astype(np.uint8), axis=1)
+                self.writer.add_images(
+                    f"training.{self.t}.images.{idx}.action.{a[idx]}.reward.{r[idx]}",
+                    images,
+                    self.t,
+                )
+            self.writer.flush()
 
         if self.debug:
             self.logger.debug(f"q_next: {q_next}")
@@ -295,11 +315,13 @@ class RLPlayer(object):
         q_a_summary = []
         reward_summary = []
         episode_reward_summary = []
+        episode_length_summary = []
 
         for i in range(self.config.num_episodes_test):
             episode_reward = 0
             obs, _ = env.reset()
             done = False
+            episode_length = 0
             while not done:
                 replay_buffer.add_frame(obs)
                 state = replay_buffer.get_last_state()
@@ -328,18 +350,23 @@ class RLPlayer(object):
                     replay_buffer.log(self.logger)
 
                 episode_reward += reward
+                episode_length += 1
                 action_summary.append(action)
                 reward_summary.append(reward)
                 q_summary.extend(q.view(-1).tolist())
                 q_a_summary.append(q[action].item())
             
             episode_reward_summary.append(episode_reward)
+            episode_length_summary.append(episode_length)
             if self.debug:
                 self.logger.debug(f"Evaluated one episode. Reward: {episode_reward}")
 
         self.writer.add_scalar("0.scaler.eval.episode_reward.avg", mean(episode_reward_summary), self.t)
         self.writer.add_scalar("1.scaler.eval.episode_reward.min", min(episode_reward_summary), self.t)
         self.writer.add_scalar("1.scaler.eval.episode_reward.max", max(episode_reward_summary), self.t)
+        self.writer.add_scalar("0.scaler.eval.episode_length.avg", mean(episode_length_summary), self.t)
+        self.writer.add_scalar("1.scaler.eval.episode_length.min", min(episode_length_summary), self.t)
+        self.writer.add_scalar("1.scaler.eval.episode_length.max", max(episode_length_summary), self.t)
         self.writer.add_scalar("2.scalar.eval.reward.avg", mean(reward_summary), self.t)
         self.writer.add_scalar("2.scalar.eval.q.avg", mean(q_summary), self.t)
         self.writer.add_scalar("2.scalar.eval.q.min", min(q_summary), self.t)
@@ -358,6 +385,9 @@ class RLPlayer(object):
             self.writer.add_scalar("0.scalar.episode.episode_reward.avg", mean(self.episode_reward_summary), self.t)
             self.writer.add_scalar("1.scalar.episode.episode_reward.min", min(self.episode_reward_summary), self.t)
             self.writer.add_scalar("1.scalar.episode.episode_reward.max", max(self.episode_reward_summary), self.t)
+            self.writer.add_scalar("0.scalar.episode.episode_length.avg", mean(self.episode_length_summary), self.t)
+            self.writer.add_scalar("1.scalar.episode.episode_length.min", min(self.episode_length_summary), self.t)
+            self.writer.add_scalar("1.scalar.episode.episode_length.max", max(self.episode_length_summary), self.t)
         self.writer.add_scalar("2.scalar.episode.reward.sum", sum(self.reward_summary), self.t)
         self.writer.add_scalar("2.scalar.episode.q.avg", mean(self.q_summary), self.t)
         self.writer.add_scalar("2.scalar.episode.q.min", min(self.q_summary), self.t)
@@ -406,6 +436,19 @@ class RLPlayer(object):
     def log_model_summary(self, model_name, model):
         for name, param in model.named_parameters():
             self.writer.add_histogram(f"{model_name}." + name, param, self.t)
+    
+    def log_image_summary(self):
+        images = np.expand_dims(np.stack(self.obs_summary, axis=0), axis=1)
+        actions = '_'.join(map(str, list(self.action_summary)[-8:]))
+        rewards = '_'.join(map(str, list(self.reward_summary)[-8:]))
+        self.writer.add_images(
+            f"episode.{self.t}.images.actions.{actions}.rewards.{rewards}",
+            images,
+            self.t,
+        )
+
+
+
 
 class ConvNet(nn.Module):
     def __init__(self, output_units):
