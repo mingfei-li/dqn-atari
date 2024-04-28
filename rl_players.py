@@ -48,9 +48,9 @@ class RLPlayer(object):
         self.replay_buffer.add_frame(obs)
         state = self.replay_buffer.get_last_state()
 
-        self.q_net.eval()
+        self.target_q_net.eval()
         with torch.no_grad():
-            q = self.q_net(torch.unsqueeze(state, dim=0))[0]
+            q = self.target_q_net(torch.unsqueeze(state, dim=0))[0]
 
         if self.t < self.config.learning_start or random.random() < self.eps:
             action = self.env.action_space.sample()
