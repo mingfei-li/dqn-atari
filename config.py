@@ -35,7 +35,7 @@ class Config():
     skip_frame         = 4
     lr_begin           = 0.00025
     lr_end             = 0.00005
-    lr_nsteps          = nsteps_train/2
+    lr_nsteps          = 1_000_000
     eps_begin          = 1
     eps_end            = 0.1
     eps_nsteps         = 1_000_000
