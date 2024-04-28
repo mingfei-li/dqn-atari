@@ -222,7 +222,7 @@ class RLPlayer(object):
         optimizer = torch.optim.Adam(
             params=self.q_net.parameters(),
             lr=self.lr,
-            betas=(0.95, 0.95),
+            betas=(0.9, 0.9),
             eps=0.01,
         )
         optimizer.zero_grad()
