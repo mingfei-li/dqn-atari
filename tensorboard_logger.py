@@ -66,8 +66,8 @@ class TensorboardLogger():
         for idx in range(s.shape[0]):
             images = torch.cat([s[idx], ns[idx]], dim=0)
             images = images * self.config.obs_scale
-            images = torch.unsqueeze(images.int(), dim=1)
-            grid = make_grid(images, self.config.state_history)
+            images = torch.unsqueeze(images, dim=1)
+            grid = make_grid(images.int(), self.config.state_history)
             self.writer.add_image(
                 f"training.{t}.images.{idx}.action.{a[idx]}.reward.{r[idx]}",
                 grid,
