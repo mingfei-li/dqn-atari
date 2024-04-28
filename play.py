@@ -1,5 +1,4 @@
 from config import Config
-from episode import Episode
 from rl_players import RLPlayer
 import gymnasium as gym
 from gymnasium.experimental.wrappers import RecordVideoV0
@@ -34,26 +33,15 @@ def play(config: Config, debug):
     env = RecordVideoV0(env, config.record_path)
 
     player = RLPlayer(env, config, debug)
-    episode = None
-    episode_id = 0
+    done = True
     for _ in tqdm(range(config.nsteps_train), desc="Global step: "):
-        if episode is None or episode.done:
-            if episode_id > 0:
-                episode.log()
-            episode_id += 1
-            episode = Episode(episode_id, config, env.action_space.n)
+        if done:
             obs, _ = env.reset()
 
-        state, action, q, eps = player.get_action(obs)
+        action = player.get_action(obs)
         obs, reward, terminated, truncated, *_ = env.step(action)
         done = terminated or truncated
-        loss, lr, training_info = player.update(action, reward, done)
-
-        episode.update_action(state, action, q, eps)
-        episode.update_feedback(obs, reward, done)
-        episode.update_training(loss, lr, training_info)
-        episode.t += 1
-
+        player.update(action, reward, done)
     env.close()
 
 if __name__ == "__main__":

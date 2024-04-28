@@ -150,7 +150,7 @@ class RLPlayer(object):
             self.q_a_summary.append(q[action].item())
             self.q_summary.extend(q.tolist())
         
-        return state, action, q, self.eps
+        return action
 
     def update(self, action, reward, done):
         self.replay_buffer.add_action(action)
@@ -160,7 +160,7 @@ class RLPlayer(object):
             self.logger.debug("Added a step to buffer")
             self.replay_buffer.log(self.logger)
 
-        loss, lr, training_info = self.train()
+        self.train()
 
         self.episode_reward += reward
         if done:
@@ -183,18 +183,17 @@ class RLPlayer(object):
 
         self.update_eps()
         self.update_lr()
-        return loss, lr, training_info
 
     def train(self):
         if self.t < self.config.learning_start:
             if self.debug:
                 self.logger.debug("Didn't train: not played enough steps")
-            return None, None, None
+            return
 
         if self.t % self.config.learning_freq != 0:
             if self.debug:
                 self.logger.debug("Didn't train: not at the right step")
-            return None, None, None
+            return
 
         s, a, r, d, ns = self.replay_buffer.sample(self.config.batch_size)
         s = s[~d]
@@ -290,8 +289,6 @@ class RLPlayer(object):
             self.logger.debug(f"prediction model after training step {self.q_net.state_dict()}")
             self.logger.debug(f"target model after update: {self.target_q_net.state_dict()}")
             self.logger.debug("Finished model training")
-
-        return loss.item(), self.lr, [s, a, r, ns, q_a, target]
 
     def evaluate(self):
         if self.debug:
