@@ -47,6 +47,7 @@ class Agent():
 
     def train(self):
         total_reward = 0
+        episode_len = 0
         obs, _ = self.env.reset()
         done = False
         while not done:
@@ -77,9 +78,11 @@ class Agent():
             self.training_logger.add_step_stats("lr", self.lr)
 
             total_reward += reward
+            episode_len += 1
             self.t += 1
 
         self.training_logger.add_episode_stats("training_reward", total_reward)
+        self.training_logger.add_episode_stats("training_episode_len", episode_len)
         self.training_logger.flush(self.t)
 
     def train_step(self):
@@ -118,6 +121,7 @@ class Agent():
         
     def test(self):
         total_reward = 0
+        episode_len = 0
         buffer = ReplayBuffer(
             400,
             self.env.observation_space.shape,
@@ -136,7 +140,9 @@ class Agent():
             done = terminated or truncated
 
             total_reward += reward
+            episode_len += 1
         self.testing_logger.add_episode_stats("testing_reward", total_reward)
+        self.testing_logger.add_episode_stats("testing_episode_len", episode_len)
         self.testing_logger.flush(self.t)
         return total_reward
 

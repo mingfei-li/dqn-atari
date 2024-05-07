@@ -28,6 +28,7 @@ if __name__ == "__main__":
 
     obs, _ = env.reset()
     total_reward = 0
+    episode_len = 0
     buffer = ReplayBuffer(
         400,
         env.observation_space.shape,
@@ -43,6 +44,8 @@ if __name__ == "__main__":
         obs, reward, terminated, truncated, _ = env.step(action)
         done = terminated or truncated
         total_reward += reward
+        episode_len += episode_len
     
     env.close()
     print(f"Reward: {total_reward}")
+    print(f"Episode Length: {episode_len}")
