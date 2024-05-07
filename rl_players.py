@@ -97,11 +97,9 @@ class RLPlayer(object):
         q_a = q[torch.arange(q.size(0)), a]
         loss = nn.HuberLoss()(q_a, target)
 
-        optimizer = torch.optim.RMSprop(
+        optimizer = torch.optim.Adam(
             params=self.q_net.parameters(),
             lr=self.lr,
-            alpha=0.9,
-            eps=0.01,
         )
         optimizer.zero_grad()
         loss.backward()
