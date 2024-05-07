@@ -13,6 +13,7 @@ class Agent():
     def __init__(self, env, config: Config, run_id):
         self.env = env
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(self.device)
         self.config = config
         self.run_id = run_id
         self.eps = config.max_eps
