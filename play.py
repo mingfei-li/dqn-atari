@@ -2,6 +2,7 @@ from config import Config
 from gymnasium.experimental.wrappers import RecordVideoV0
 from mlp_model import MLPModel
 from replay_buffer import ReplayBuffer
+from pathlib import Path
 import gymnasium as gym
 import torch
 import sys
@@ -11,9 +12,11 @@ if __name__ == "__main__":
         print("Usage: python play.py <filename>")
         sys.exit(1)
     model_path = sys.argv[1]
+    path = Path(model_path)
+    video_path = f"results/videos/{Path(*path.parts[2:])}"
 
     env = gym.make('CartPole-v0', render_mode="rgb_array")
-    env = RecordVideoV0(env, video_folder="results/videos")
+    env = RecordVideoV0(env, video_folder=video_path)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = MLPModel(
