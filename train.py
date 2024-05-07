@@ -1,7 +1,7 @@
 from config import Config
 from logger import Logger
 from mlp_model import MLPModel
-from replay_buffer_tensor import ReplayBuffer
+from replay_buffer_deque import ReplayBuffer
 from tqdm import tqdm
 import cProfile
 import gymnasium as gym

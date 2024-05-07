@@ -9,7 +9,8 @@ class MLPModel(nn.Module):
         self.flatten = nn.Flatten()
         self.linear1 = nn.Linear(in_features=in_features, out_features=16)
         self.linear2 = nn.Linear(in_features=16, out_features=32)
-        self.linear3 = nn.Linear(in_features=32, out_features=16)
+        self.linear3 = nn.Linear(in_features=32, out_features=32)
+        self.linear4 = nn.Linear(in_features=32, out_features=16)
         self.output_layer = nn.Linear(in_features=16, out_features=out_features)
 
     def forward(self, x):
@@ -17,5 +18,6 @@ class MLPModel(nn.Module):
         x = F.relu(self.linear1(x))
         x = F.relu(self.linear2(x))
         x = F.relu(self.linear3(x))
+        x = F.relu(self.linear4(x))
         x = self.output_layer(x)
         return x
