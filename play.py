@@ -1,7 +1,7 @@
 from config import Config
 from gymnasium.experimental.wrappers import RecordVideoV0
 from mlp_model import MLPModel
-from replay_buffer import ReplayBuffer
+from replay_buffer_deque import ReplayBuffer
 from pathlib import Path
 import gymnasium as gym
 import torch
@@ -43,6 +43,7 @@ if __name__ == "__main__":
 
         obs, reward, terminated, truncated, _ = env.step(action)
         done = terminated or truncated
+        buffer.add_done(done)
         total_reward += reward
         episode_len += episode_len
     

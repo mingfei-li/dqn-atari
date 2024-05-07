@@ -1,7 +1,7 @@
 from config import Config
 from logger import Logger
 from mlp_model import MLPModel
-from replay_buffer import ReplayBuffer
+from replay_buffer_tensor import ReplayBuffer
 from tqdm import tqdm
 import cProfile
 import gymnasium as gym
@@ -14,7 +14,6 @@ class Agent():
     def __init__(self, env, config: Config, run_id):
         self.env = env
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(self.device)
         self.config = config
         self.run_id = run_id
         self.eps = config.max_eps
@@ -138,6 +137,7 @@ class Agent():
 
             obs, reward, terminated, truncated, _ = self.env.step(action)
             done = terminated or truncated
+            buffer.add_done(done)
 
             total_reward += reward
             episode_len += 1
