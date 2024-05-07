@@ -8,3 +8,4 @@ __pycache__/players.cpython-310.pyc
 /results*
 .DS_Store
 *.log
+/backup
