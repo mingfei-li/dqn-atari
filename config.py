@@ -12,4 +12,4 @@ class Config():
     learning_start = 20_000
     buffer_size = 50_000
     test_freq = 1
-    exp_id = "v0,learning_start=20000,n_training=3000,batchsize=96,lr=1e-4,state=4frames"
+    exp_id = "cartpole-4,v0,learning_start=20000,n_training=3000,batchsize=96,lr=1e-4,state=4frames"

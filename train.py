@@ -3,6 +3,7 @@ from logger import Logger
 from mlp_model import MLPModel
 from replay_buffer import ReplayBuffer
 from tqdm import tqdm
+import cProfile
 import gymnasium as gym
 import random
 import torch
@@ -153,7 +154,7 @@ class Agent():
         self.policy_model.eval()
         torch.save(self.policy_model.state_dict(), f"{path}/{model_name}")
 
-if __name__ == "__main__":
+def run():
     for run_id in range(5):
         env = gym.make('CartPole-v0', render_mode="rgb_array")
         config = Config()
@@ -170,3 +171,6 @@ if __name__ == "__main__":
                 agent.save_model(f"model-{reward}.pt")
 
         env.close()
+
+if __name__ == "__main__":
+    cProfile.run("run()", "perf_stats_training.log")
