@@ -9,7 +9,7 @@ class Config():
     target_update_freq = 50
     batch_size = 96
     gamma = 0.99
-    learning_start = 20_000
-    buffer_size = 1_000_000
+    learning_start = 10_000
+    buffer_size = 50_000
     test_freq = 1
     exp_id = "exp-12,cartpole-v0,buffer=deque"
