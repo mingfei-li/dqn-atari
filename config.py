@@ -10,6 +10,6 @@ class Config():
     batch_size = 96
     gamma = 0.99
     learning_start = 20_000
-    buffer_size = 100_000
+    buffer_size = 1_000_000
     test_freq = 1
-    exp_id = "exp-9,cartpole-v0,learning_start=20000,n_training=3000,batchsize=96,lr=1e-4,state=4frames"
+    exp_id = "exp-11,cartpole-v0,buffer=deque"
