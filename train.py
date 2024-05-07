@@ -9,6 +9,49 @@ import torch
 import torch.nn as nn
 import os
 
+class ReplayBuffer():
+    def __init__(self, maxlen):
+        self.obs = deque(maxlen=maxlen)
+        self.actions = deque(maxlen=maxlen)
+        self.rewards = deque(maxlen=maxlen)
+        self.dones = deque(maxlen=maxlen)
+    
+    def add_obs(self, obs):
+        self.obs.append(obs)
+
+    def add_action(self, action):
+        self.actions.append(action)
+    
+    def add_reward(self, reward):
+        self.rewards.append(reward)
+    
+    def add_done(self, done):
+        self.dones.append(done)
+
+    def get_last_state(self):
+        return self._get_state(len(self.obs)-1)
+
+    def sample(self, size):
+        assert len(self.obs)-4 >= size
+        indexes = random.sample(range(3, len(self.obs)-1), size)
+        states = [self._get_state(i) for i in indexes]
+        actions = [self.actions[i] for i in indexes]
+        rewards = [self.rewards[i] for i in indexes]
+        dones = [self.dones[i] for i in indexes]
+        next_states = [self._get_state(i+1) for i in indexes]
+        return states, actions, rewards, dones, next_states
+
+    def _get_state(self, i):
+        state = torch.zeros((4,) + self.obs[i].shape)
+        state[3] = torch.tensor(self.obs[i])
+        for j in range(1, 4):
+            if i-j < 0:
+                break
+            if self.dones[i-j]:
+                break
+            state[3-j] = torch.tensor(self.obs[i-j])
+        return state
+
 class Agent():
     def __init__(self, env, config: Config, run_id):
         self.env = env
@@ -20,16 +63,16 @@ class Agent():
         self.lr_step = (config.max_lr - config.min_lr) / config.n_lr
 
         self.policy_model = MLPModel(
-            in_features=self.env.observation_space.shape[0],
+            in_features=self.env.observation_space.shape[0]*4,
             out_features=self.env.action_space.n,
         )
         self.target_model = MLPModel(
-            in_features=self.env.observation_space.shape[0],
+            in_features=self.env.observation_space.shape[0]*4,
             out_features=self.env.action_space.n,
         )
         self.target_model.load_state_dict(self.policy_model.state_dict())
 
-        self.replay_buffer = deque(maxlen=config.buffer_size)
+        self.replay_buffer = ReplayBuffer(maxlen=config.buffer_size)
 
         self.training_logger = Logger(
             f"results/logs/{config.exp_id}/{run_id}/training")
@@ -43,21 +86,24 @@ class Agent():
         obs, _ = self.env.reset()
         done = False
         while not done:
+            self.replay_buffer.add_obs(obs)
             if (random.random() < self.eps or 
                 self.t < self.config.learning_start):
 
                 action = self.env.action_space.sample()
             else:
                 self.policy_model.eval()
-                state = torch.unsqueeze(torch.tensor(obs), dim=0)
+                state = self.replay_buffer.get_last_state()
                 with torch.no_grad():
-                    q = self.policy_model(state)[0]
+                    q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
                 action = torch.argmax(q, dim=0).item()
                 self.training_logger.add_step_stats("q_a", q[action].item())
 
-            new_obs, reward, terminated, truncated, _ = self.env.step(action)
+            obs, reward, terminated, truncated, _ = self.env.step(action)
             done = terminated or truncated
-            self.replay_buffer.append([obs, action, reward, new_obs, done])
+            self.replay_buffer.add_action(action)
+            self.replay_buffer.add_reward(reward)
+            self.replay_buffer.add_done(done)
 
             if self.t >= self.config.learning_start:
                 self.train_step()
@@ -68,14 +114,13 @@ class Agent():
             self.training_logger.add_step_stats("lr", self.lr)
 
             total_reward += reward
-            obs = new_obs
             self.t += 1
 
         self.training_logger.add_episode_stats("training_reward", total_reward)
         self.training_logger.flush(self.t)
 
     def train_step(self):
-        states, actions, rewards, next_states, dones = self.sample()
+        states, actions, rewards, dones, next_states = self.sample()
 
         self.target_model.eval()
         with torch.no_grad():
@@ -109,42 +154,33 @@ class Agent():
         self.training_logger.add_step_stats("loss", loss.item())
         
     def sample(self):
-        states = []
-        actions = []
-        rewards = []
-        next_states = []
-        dones = []
-
-        experiences = random.sample(self.replay_buffer, self.config.batch_size)
-        for exp in experiences:
-            state, action, reward, next_state, done = exp
-            states.append(torch.tensor(state))
-            actions.append(action)
-            rewards.append(reward)
-            next_states.append(torch.tensor(next_state))
-            dones.append(done)
+        states, actions, rewards, dones, next_states = self.replay_buffer.sample(self.config.batch_size)
 
         return [
             torch.stack(states, dim=0),
             torch.tensor(actions),
             torch.tensor(rewards),
-            torch.stack(next_states, dim=0),
             torch.tensor(dones),
+            torch.stack(next_states, dim=0),
         ]
 
     def test(self):
         total_reward = 0
+        buffer = ReplayBuffer(4)
         obs, _ = self.env.reset()
         done = False
         while not done:
+            buffer.add_obs(obs)
+            state = buffer.get_last_state()
             self.policy_model.eval()
-            state = torch.unsqueeze(torch.tensor(obs), dim=0)
             with torch.no_grad():
-                q = self.policy_model(state)[0]
+                q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
             action = torch.argmax(q, dim=0).item()
 
             obs, reward, terminated, truncated, _ = self.env.step(action)
             done = terminated or truncated
+
+            buffer.add_done(done)
             total_reward += reward
         self.testing_logger.add_episode_stats("testing_reward", total_reward)
         self.testing_logger.flush(self.t)
