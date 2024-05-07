@@ -37,7 +37,7 @@ class ReplayBuffer():
         actions = torch.tensor([self.actions[i] for i in indexes], device=self.device)
         rewards = torch.tensor([self.rewards[i] for i in indexes], device=self.device)
         dones = torch.tensor([self.dones[i] for i in indexes], device=self.device)
-        next_states = torch.stack([self._get_state(i+1) for i in indexes])
+        next_states = torch.stack([self._get_state((i+1) % self.maxlen) for i in indexes])
         return states, actions, rewards, dones, next_states
 
     def _get_state(self, i):
