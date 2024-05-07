@@ -1,5 +1,5 @@
 class Config():
-    num_episodes_train = 3000
+    num_episodes_train = 2000
     max_eps = 0.05
     min_eps = 0.05
     n_eps = 50_000
