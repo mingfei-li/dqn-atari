@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = MLPModel(
-        in_features=env.observation_space.shape[0],
+        in_features=env.observation_space.shape[0]*4,
         out_features=env.action_space.n,
     ).to(device)
     model.load_state_dict(torch.load(model_path))
