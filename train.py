@@ -32,7 +32,11 @@ class Agent():
         ).to(self.device)
         self.target_model.load_state_dict(self.policy_model.state_dict())
 
-        self.replay_buffer = ReplayBuffer(config.buffer_size, self.device)
+        self.replay_buffer = ReplayBuffer(
+            config.buffer_size,
+            self.env.observation_space.shape,
+            self.device,
+        )
 
         self.training_logger = Logger(
             f"results/logs/{config.exp_id}/{run_id}/training")
@@ -46,14 +50,13 @@ class Agent():
         obs, _ = self.env.reset()
         done = False
         while not done:
-            self.replay_buffer.add_obs(obs)
+            state = self.replay_buffer.get_state_for_new_obs(obs)
             if (random.random() < self.eps or 
                 self.t < self.config.learning_start):
 
                 action = self.env.action_space.sample()
             else:
                 self.policy_model.eval()
-                state = self.replay_buffer.get_last_state()
                 with torch.no_grad():
                     q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
                 action = torch.argmax(q, dim=0).item()
@@ -80,7 +83,7 @@ class Agent():
         self.training_logger.flush(self.t)
 
     def train_step(self):
-        states, actions, rewards, dones, next_states = self.sample()
+        states, actions, rewards, dones, next_states = self.replay_buffer.sample(self.config.batch_size)
 
         self.target_model.eval()
         with torch.no_grad():
@@ -113,25 +116,17 @@ class Agent():
         self.training_logger.add_step_stats("grad_norm", grad_norm)
         self.training_logger.add_step_stats("loss", loss.item())
         
-    def sample(self):
-        states, actions, rewards, dones, next_states = self.replay_buffer.sample(self.config.batch_size)
-
-        return [
-            torch.stack(states, dim=0),
-            torch.tensor(actions, device=self.device),
-            torch.tensor(rewards, device=self.device),
-            torch.tensor(dones, device=self.device),
-            torch.stack(next_states, dim=0),
-        ]
-
     def test(self):
         total_reward = 0
-        buffer = ReplayBuffer(4, self.device)
+        buffer = ReplayBuffer(
+            400,
+            self.env.observation_space.shape,
+            self.device,
+        )
         obs, _ = self.env.reset()
         done = False
         while not done:
-            buffer.add_obs(obs)
-            state = buffer.get_last_state()
+            state = buffer.get_state_for_new_obs(obs)
             self.policy_model.eval()
             with torch.no_grad():
                 q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
@@ -140,7 +135,6 @@ class Agent():
             obs, reward, terminated, truncated, _ = self.env.step(action)
             done = terminated or truncated
 
-            buffer.add_done(done)
             total_reward += reward
         self.testing_logger.add_episode_stats("testing_reward", total_reward)
         self.testing_logger.flush(self.t)

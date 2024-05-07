@@ -28,18 +28,20 @@ if __name__ == "__main__":
 
     obs, _ = env.reset()
     total_reward = 0
-    buffer = ReplayBuffer(4, device)
+    buffer = ReplayBuffer(
+        400,
+        env.observation_space.shape,
+        device,
+    )
     done = False
     while not done:
-        buffer.add_obs(obs)
-        state = buffer.get_last_state()
+        state = buffer.get_state_for_new_obs(obs)
         with torch.no_grad():
             q = model(torch.unsqueeze(state, dim=0))[0]
         action = torch.argmax(q, dim=0).item()
 
         obs, reward, terminated, truncated, _ = env.step(action)
         done = terminated or truncated
-        buffer.add_done(done)
         total_reward += reward
     
     env.close()
