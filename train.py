@@ -1,7 +1,7 @@
-from collections import deque
 from config import Config
 from logger import Logger
 from mlp_model import MLPModel
+from replay_buffer import ReplayBuffer
 from tqdm import tqdm
 import gymnasium as gym
 import random
@@ -9,52 +9,10 @@ import torch
 import torch.nn as nn
 import os
 
-class ReplayBuffer():
-    def __init__(self, maxlen):
-        self.obs = deque(maxlen=maxlen)
-        self.actions = deque(maxlen=maxlen)
-        self.rewards = deque(maxlen=maxlen)
-        self.dones = deque(maxlen=maxlen)
-    
-    def add_obs(self, obs):
-        self.obs.append(obs)
-
-    def add_action(self, action):
-        self.actions.append(action)
-    
-    def add_reward(self, reward):
-        self.rewards.append(reward)
-    
-    def add_done(self, done):
-        self.dones.append(done)
-
-    def get_last_state(self):
-        return self._get_state(len(self.obs)-1)
-
-    def sample(self, size):
-        assert len(self.obs)-4 >= size
-        indexes = random.sample(range(3, len(self.obs)-1), size)
-        states = [self._get_state(i) for i in indexes]
-        actions = [self.actions[i] for i in indexes]
-        rewards = [self.rewards[i] for i in indexes]
-        dones = [self.dones[i] for i in indexes]
-        next_states = [self._get_state(i+1) for i in indexes]
-        return states, actions, rewards, dones, next_states
-
-    def _get_state(self, i):
-        state = torch.zeros((4,) + self.obs[i].shape)
-        state[3] = torch.tensor(self.obs[i])
-        for j in range(1, 4):
-            if i-j < 0:
-                break
-            if self.dones[i-j]:
-                break
-            state[3-j] = torch.tensor(self.obs[i-j])
-        return state
-
 class Agent():
     def __init__(self, env, config: Config, run_id):
         self.env = env
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.config = config
         self.run_id = run_id
         self.eps = config.max_eps
@@ -65,14 +23,14 @@ class Agent():
         self.policy_model = MLPModel(
             in_features=self.env.observation_space.shape[0]*4,
             out_features=self.env.action_space.n,
-        )
+        ).to(self.device)
         self.target_model = MLPModel(
             in_features=self.env.observation_space.shape[0]*4,
             out_features=self.env.action_space.n,
-        )
+        ).to(self.device)
         self.target_model.load_state_dict(self.policy_model.state_dict())
 
-        self.replay_buffer = ReplayBuffer(maxlen=config.buffer_size)
+        self.replay_buffer = ReplayBuffer(config.buffer_size, self.device)
 
         self.training_logger = Logger(
             f"results/logs/{config.exp_id}/{run_id}/training")
@@ -158,15 +116,15 @@ class Agent():
 
         return [
             torch.stack(states, dim=0),
-            torch.tensor(actions),
-            torch.tensor(rewards),
-            torch.tensor(dones),
+            torch.tensor(actions, device=self.device),
+            torch.tensor(rewards, device=self.device),
+            torch.tensor(dones, device=self.device),
             torch.stack(next_states, dim=0),
         ]
 
     def test(self):
         total_reward = 0
-        buffer = ReplayBuffer(4)
+        buffer = ReplayBuffer(4, self.device)
         obs, _ = self.env.reset()
         done = False
         while not done:
@@ -203,7 +161,8 @@ if __name__ == "__main__":
         max_reward = 0
         for i in tqdm(range(config.num_episodes_train), desc=f"Run {run_id}"):
             agent.train()
-            reward = agent.test()
+            if i % config.test_freq == 0:
+                reward = agent.test()
 
             if reward >= max_reward:
                 max_reward = reward
