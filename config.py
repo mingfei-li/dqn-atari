@@ -12,4 +12,4 @@ class Config():
     learning_start = 10_000
     buffer_size = 50_000
     test_freq = 1
-    exp_id = "exp-12,cartpole-v0,buffer=deque"
+    exp_id = "exp-13,cartpole-v0,buffer=tensor"
