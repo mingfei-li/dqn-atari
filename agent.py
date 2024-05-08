@@ -115,7 +115,7 @@ class Agent():
         q_a = torch.gather(q, 1, actions.unsqueeze(dim=1)).squeeze(dim=1)
 
         loss = nn.MSELoss()(q_a, targets)
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.RMSprop(
             params=self.policy_model.parameters(),
             lr=self.lr,
         )
