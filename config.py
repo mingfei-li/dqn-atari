@@ -22,15 +22,15 @@ class AtariPongConfig(Config):
     num_episodes_train = 5_000
     max_eps = 1
     min_eps = 0.1
-    n_eps = 1_000_000
+    n_eps = 2_000_000
     max_lr = 0.00025
     min_lr = 0.00025
     n_lr = 500_000
     target_update_freq = 10_000
     batch_size = 96
     gamma = 0.99
-    learning_start = 50_000
-    buffer_size = 500_000
+    learning_start = 200_000
+    buffer_size = 1_000_000
     test_freq = 10
     model = "conv_net"
-    exp_id = "exp-30:atari-pong,buf_size=500k,batch_size=96,learning_start=50k,n_train=5k,adam"
+    exp_id = "exp-31:atari-pong,buf_size=1m,batch_size=96,learning_start=200k,n_eps=2m,n_train=5k,adam"
