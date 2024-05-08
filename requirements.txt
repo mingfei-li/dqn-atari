@@ -1,2 +1,5 @@
-gymnasium[all]
+gymnasium[classic-control]
+gymnasium[atari]
+gymnasium[accept-rom-license]
+gymnasium[other]
 tensorboard
