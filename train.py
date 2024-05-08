@@ -1,10 +1,11 @@
-from config import Config
+from config import Config, CartPoleConfig
 from logger import Logger
 from mlp_model import MLPModel
 from replay_buffer_tensor import ReplayBuffer
 from tqdm import tqdm
 import cProfile
 import gymnasium as gym
+import math
 import random
 import torch
 import torch.nn as nn
@@ -20,6 +21,7 @@ class Agent():
         self.eps_step = (config.max_eps - config.min_eps) / config.n_eps
         self.lr = config.max_lr
         self.lr_step = (config.max_lr - config.min_lr) / config.n_lr
+        self.max_reward = -math.inf
 
         self.policy_model = MLPModel(
             in_features=self.env.observation_space.shape[0]*4,
@@ -45,44 +47,48 @@ class Agent():
         self.t = 0
 
     def train(self):
-        total_reward = 0
-        episode_len = 0
-        obs, _ = self.env.reset()
-        done = False
-        while not done:
-            state = self.replay_buffer.get_state_for_new_obs(obs)
-            if (random.random() < self.eps or 
-                self.t < self.config.learning_start):
+        for i in tqdm(range(self.config.num_episodes_train), desc=f"Run {self.run_id}"):
+            total_reward = 0
+            episode_len = 0
+            obs, _ = self.env.reset()
+            done = False
+            while not done:
+                state = self.replay_buffer.get_state_for_new_obs(obs)
+                if (random.random() < self.eps or 
+                    self.t < self.config.learning_start):
 
-                action = self.env.action_space.sample()
-            else:
-                self.policy_model.eval()
-                with torch.no_grad():
-                    q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
-                action = torch.argmax(q, dim=0).item()
-                self.training_logger.add_step_stats("q_a", q[action].item())
+                    action = self.env.action_space.sample()
+                else:
+                    self.policy_model.eval()
+                    with torch.no_grad():
+                        q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
+                    action = torch.argmax(q, dim=0).item()
+                    self.training_logger.add_step_stats("q_a", q[action].item())
 
-            obs, reward, terminated, truncated, _ = self.env.step(action)
-            done = terminated or truncated
-            self.replay_buffer.add_action(action)
-            self.replay_buffer.add_reward(reward)
-            self.replay_buffer.add_done(done)
+                obs, reward, terminated, truncated, _ = self.env.step(action)
+                done = terminated or truncated
+                self.replay_buffer.add_action(action)
+                self.replay_buffer.add_reward(reward)
+                self.replay_buffer.add_done(done)
 
-            if self.t >= self.config.learning_start:
-                self.train_step()
+                if self.t >= self.config.learning_start:
+                    self.train_step()
 
-            self.eps = max(self.eps - self.eps_step, self.config.min_eps)
-            self.lr = max(self.lr - self.lr_step, self.config.min_lr)
-            self.training_logger.add_step_stats("eps", self.eps)
-            self.training_logger.add_step_stats("lr", self.lr)
+                self.eps = max(self.eps - self.eps_step, self.config.min_eps)
+                self.lr = max(self.lr - self.lr_step, self.config.min_lr)
+                self.training_logger.add_step_stats("eps", self.eps)
+                self.training_logger.add_step_stats("lr", self.lr)
 
-            total_reward += reward
-            episode_len += 1
-            self.t += 1
+                total_reward += reward
+                episode_len += 1
+                self.t += 1
+            
+            if i % self.config.test_freq == 0:
+                self.test()
 
-        self.training_logger.add_episode_stats("training_reward", total_reward)
-        self.training_logger.add_episode_stats("training_episode_len", episode_len)
-        self.training_logger.flush(self.t)
+            self.training_logger.add_episode_stats("training_reward", total_reward)
+            self.training_logger.add_episode_stats("training_episode_len", episode_len)
+            self.training_logger.flush(self.t)
 
     def train_step(self):
         states, actions, rewards, dones, next_states = self.replay_buffer.sample(self.config.batch_size)
@@ -141,6 +147,11 @@ class Agent():
 
             total_reward += reward
             episode_len += 1
+
+        if total_reward >= self.max_reward:
+            self.max_reward = total_reward
+            self.save_model(f"model-{total_reward}.pt")
+
         self.testing_logger.add_episode_stats("testing_reward", total_reward)
         self.testing_logger.add_episode_stats("testing_episode_len", episode_len)
         self.testing_logger.flush(self.t)
@@ -154,23 +165,13 @@ class Agent():
         self.policy_model.eval()
         torch.save(self.policy_model.state_dict(), f"{path}/{model_name}")
 
-def run():
+def cartpole():
     for run_id in range(5):
         env = gym.make('CartPole-v0', render_mode="rgb_array")
-        config = Config()
+        config = CartPoleConfig()
         agent = Agent(env, config, run_id)
-
-        max_reward = 0
-        for i in tqdm(range(config.num_episodes_train), desc=f"Run {run_id}"):
-            agent.train()
-            if i % config.test_freq == 0:
-                reward = agent.test()
-
-            if reward >= max_reward:
-                max_reward = reward
-                agent.save_model(f"model-{reward}.pt")
-
+        agent.train()
         env.close()
 
 if __name__ == "__main__":
-    cProfile.run("run()", "perf_stats_training.log")
+    cProfile.run("cartpole()", "perf_stats_training.log")
