@@ -1,2 +1,2 @@
-gymnasium[classic-control]
+gymnasium[all]
 tensorboard
