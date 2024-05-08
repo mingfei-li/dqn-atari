@@ -12,7 +12,7 @@ class Config():
     learning_start = 20_000
     buffer_size = 50_000
     test_freq = 1
-    exp_id = "exp-16,cartpole-v0,buffer=tensor"
+    exp_id = "exp-18,cartpole-v0,buffer=tensor"
 
 class CartPoleConfig(Config):
     pass
