@@ -6,7 +6,7 @@ class ReplayBuffer():
         self.maxlen = maxlen
         self.len = 0
         self.back = -1
-        self.obs = torch.zeros((maxlen,) + shape, dtype=torch.float, device=device)
+        self.obs = torch.zeros((maxlen,) + shape, dtype=torch.float16, device=device)
         self.actions = torch.zeros(maxlen, dtype=torch.int64, device=device)
         self.rewards = torch.zeros(maxlen, dtype=torch.float, device=device)
         self.dones = torch.zeros(maxlen, dtype=torch.bool, device=device)
@@ -42,7 +42,7 @@ class ReplayBuffer():
 
     def _get_state(self, i):
         if i >= 3 and not torch.any(self.dones[i-3:i]).item():
-            return self.obs[i-3:i+1]
+            return self.obs[i-3:i+1].float()
 
         state = torch.zeros((4,) + self.obs[i].shape, device=self.device)
         state[3] = self.obs[i]
@@ -51,4 +51,4 @@ class ReplayBuffer():
             if self.dones[k]:
                 break
             state[3-j] = self.obs[k]
-        return state
+        return state.float()
