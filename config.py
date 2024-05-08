@@ -22,7 +22,7 @@ class AtariPongConfig(Config):
     num_episodes_train = 5_000
     max_eps = 1
     min_eps = 0.1
-    n_eps = 1_000_000
+    n_eps = 2_000_000
     max_lr = 0.00025
     min_lr = 0.00025
     n_lr = 500_000
