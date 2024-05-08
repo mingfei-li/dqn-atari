@@ -1,6 +1,7 @@
 from config import Config
 from logger import Logger
 from mlp_model import MLPModel
+from conv_net import ConvNet
 from replay_buffer_tensor import ReplayBuffer
 from tqdm import tqdm
 import math
@@ -21,14 +22,25 @@ class Agent():
         self.lr_step = (config.max_lr - config.min_lr) / config.n_lr
         self.max_reward = -math.inf
 
-        self.policy_model = MLPModel(
-            in_features=self.env.observation_space.shape[0]*4,
-            out_features=self.env.action_space.n,
-        ).to(self.device)
-        self.target_model = MLPModel(
-            in_features=self.env.observation_space.shape[0]*4,
-            out_features=self.env.action_space.n,
-        ).to(self.device)
+        if config.model == "mlp":
+            self.policy_model = MLPModel(
+                in_features=self.env.observation_space.shape[0]*4,
+                out_features=self.env.action_space.n,
+            ).to(self.device)
+            self.target_model = MLPModel(
+                in_features=self.env.observation_space.shape[0]*4,
+                out_features=self.env.action_space.n,
+            ).to(self.device)
+        elif config.model == "conv_net":
+            self.policy_model = ConvNet(
+                output_units=self.env.action_space.n,
+            ).to(self.device)
+            self.target_model = ConvNet(
+                output_units=self.env.action_space.n,
+            ).to(self.device)
+        else:
+            raise Exception(f"Invalid model: {config.model}")
+
         self.target_model.load_state_dict(self.policy_model.state_dict())
 
         self.replay_buffer = ReplayBuffer(

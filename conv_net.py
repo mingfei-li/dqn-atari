@@ -8,7 +8,7 @@ class ConvNet(nn.Module):
         self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(4, 4), stride=2)
         self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3, 3), stride=1)
         self.flatten = nn.Flatten()
-        self.fc1 = nn.Linear(8*8*64, 512)
+        self.fc1 = nn.Linear(7*7*64, 512)
         self.fc2 = nn.Linear(512, output_units)
     
     def forward(self, x):
