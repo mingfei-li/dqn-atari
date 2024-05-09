@@ -1,6 +1,6 @@
 from agent import Agent
 from config import CartPoleConfig, AtariPongConfig
-from gymnasium.experimental.wrappers import AtariPreprocessingV0, RecordVideoV0
+from gymnasium.experimental.wrappers import AtariPreprocessingV0 
 import cProfile
 import gymnasium as gym
 import sys
