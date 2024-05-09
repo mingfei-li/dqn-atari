@@ -30,7 +30,7 @@ class AtariPongConfig(Config):
     batch_size = 64
     gamma = 0.99
     learning_start = 50_000
-    buffer_size = 1_000_000
+    buffer_size = 500_000
     test_freq = 10
     model = "conv_net"
-    exp_id = "exp-36:atari-pong,buf_size=1m,batch_size=64,learning_start=50k,n_eps=2m,n_train=5k,adam"
+    exp_id = "exp-37:atari-pong,buf_size=500k,batch_size=64,learning_start=50k,n_train=5k,adam"
