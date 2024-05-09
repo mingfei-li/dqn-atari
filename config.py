@@ -50,4 +50,4 @@ class EasyPongConfig(Config):
     buffer_size = 1_500_000
     test_freq = 10
     model = "conv_net"
-    exp_id = "easy-pong:exp-2:buf_size=1.5m,batch_size=96,learning_start=50k,lr=1e-4,n_train=25k,n_eps=1m,adam"
+    exp_id = "easy-pong:exp-3:buf_size=1.5m,batch_size=96,learning_start=50k,lr=5e-4,n_train=25k,n_eps=1m,adam"
