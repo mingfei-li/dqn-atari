@@ -1,6 +1,7 @@
 from agent import Agent
-from config import CartPoleConfig, AtariPongConfig
-from gymnasium.experimental.wrappers import AtariPreprocessingV0 
+from config import CartPoleConfig, AtariPongConfig, EasyPongConfig
+from gymnasium.experimental.wrappers import AtariPreprocessingV0, GrayscaleObservationV0
+from pong_wrapper import PongWrapper
 import cProfile
 import gymnasium as gym
 import sys
@@ -18,6 +19,15 @@ def atari_pong():
         env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array")
         env = AtariPreprocessingV0(env, scale_obs=True)
         config = AtariPongConfig()
+        agent = Agent(env, config, run_id)
+        agent.train()
+        env.close()
+
+def easy_pong():
+    for run_id in range(5):
+        env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
+        env = PongWrapper(env, training=True)
+        config = EasyPongConfig()
         agent = Agent(env, config, run_id)
         agent.train()
         env.close()
