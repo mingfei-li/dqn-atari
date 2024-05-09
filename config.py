@@ -16,7 +16,7 @@ class CartPoleConfig(Config):
     buffer_size = 50_000
     test_freq = 1
     model = "mlp"
-    exp_id = "exp-18,cartpole-v0,buffer=tensor"
+    exp_id = "exp-20,cartpole-v0,buffer=tensor"
 
 class AtariPongConfig(Config):
     num_episodes_train = 5_000
