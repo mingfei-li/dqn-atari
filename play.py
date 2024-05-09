@@ -3,9 +3,9 @@ from conv_net import ConvNet
 from gymnasium.experimental.wrappers import AtariPreprocessingV0, RecordVideoV0
 from mlp_model import MLPModel
 from replay_buffer_deque import ReplayBuffer
-from pathlib import Path
 import gymnasium as gym
 import torch
+import os
 import sys
 
 def play(env, model):
@@ -65,8 +65,10 @@ if __name__ == "__main__":
         print("Usage: python play.py <gamename> <filename>")
         sys.exit(1)
     model_path = sys.argv[2]
-    path = Path(model_path)
-    video_path = f"results/videos/{Path(*path.parts[2:])}"
+
+    base_dir = os.path.dirname(os.path.dirname(model_path))
+    model_name = os.path.basename(model_path)
+    video_path = os.path.join(base_dir, 'videos', model_name)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

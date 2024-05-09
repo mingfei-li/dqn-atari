@@ -50,9 +50,9 @@ class Agent():
         )
 
         self.training_logger = Logger(
-            f"results/logs/{config.exp_id}/{run_id}/training")
+            f"results/{config.exp_id}/{run_id}/logs/training")
         self.testing_logger = Logger(
-            f"results/logs/{config.exp_id}/{run_id}/testing",
+            f"results/{config.exp_id}/{run_id}/logs/testing",
         )
         self.t = 0
 
@@ -168,7 +168,7 @@ class Agent():
         return total_reward
 
     def save_model(self, model_name):
-        path = f"results/models/{self.config.exp_id}/{self.run_id}"
+        path = f"results/{self.config.exp_id}/{self.run_id}/models"
         if not os.path.exists(path):
             os.makedirs(path)
 
