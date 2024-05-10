@@ -40,7 +40,7 @@ class AtariPongConfig(Config):
     exp_id = "exp-42:atari-pong,buf_size=1.5m,batch_size=96,learning_start=50k,lr=1e-4,n_train=5k,n_eps=2m,adam"
 
 class EasyPongConfig(Config):
-    num_episodes_train = 50_000
+    num_episodes_train = 100_000
     max_eps = 1
     min_eps = 0.1
     n_eps = 1_000_000
@@ -56,4 +56,4 @@ class EasyPongConfig(Config):
     clip_val = 10
     betas = (0.9, 0.999)
     model = "conv_net"
-    exp_id = "easy-pong:exp-11:buf_size=1.5m,batch_size=96,learning_start=100k,lr=5e-6->5e-7,n_train=50k,n_eps=1m,clip_val=10,adam"
+    exp_id = "easy-pong:exp-12:buf_size=1.5m,batch_size=96,learning_start=100k,lr=5e-6->5e-7,n_train=100k,n_eps=1m,clip_val=10,adam"
