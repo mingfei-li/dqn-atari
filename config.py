@@ -51,9 +51,9 @@ class EasyPongConfig(Config):
     batch_size = 96
     gamma = 0.99
     learning_start = 100_000
-    buffer_size = 1_500_000
+    buffer_size = 1_000_000
     test_freq = 10
-    clip_val = 10
+    clip_val = 0
     betas = (0.9, 0.999)
     model = "conv_net"
-    exp_id = "easy-pong:exp-13:buf_size=1.5m,batch_size=96,learning_start=100k,lr=1e-5->1e-6,n_train=100k,n_eps=1m,clip_val=10,adam"
+    exp_id = "easy-pong-v2:exp-1:buf_size=1m,batch_size=96,learning_start=100k,lr=1e-5->1e-6,n_train=100k,n_eps=1m"
