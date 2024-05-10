@@ -44,8 +44,8 @@ class EasyPongConfig(Config):
     max_eps = 1
     min_eps = 0.1
     n_eps = 1_000_000
-    max_lr = 1e-5
-    min_lr = 1e-6
+    max_lr = 5e-5
+    min_lr = 5e-6
     n_lr = 2_500_000
     target_update_freq = 10_000
     batch_size = 96
