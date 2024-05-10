@@ -56,4 +56,4 @@ class EasyPongConfig(Config):
     clip_val = 0
     betas = (0.9, 0.999)
     model = "conv_net"
-    exp_id = "easy-pong-v2:exp-1:buf_size=1m,batch_size=96,learning_start=100k,lr=1e-5->1e-6,n_train=100k,n_eps=1m"
+    exp_id = "easy-pong-v2:exp-2:buf_size=1m,batch_size=96,learning_start=100k,lr=5e-5->5e-6,n_train=100k,n_eps=1m"
