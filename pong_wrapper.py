@@ -9,6 +9,7 @@ class PongWrapper(gym.Wrapper):
         self.obs_buffer = deque(maxlen=2)
         self.training = training
         self.observation_space = gym.spaces.Box(0, 1, shape=(84,84), dtype=np.float32)
+        self.episode_done = True
     
     def step(self, action):
         total_reward = 0
@@ -16,21 +17,27 @@ class PongWrapper(gym.Wrapper):
             obs, reward, terminated, truncated, _ = self.env.step(action)
             self.obs_buffer.append(self.transform(obs))
             total_reward += reward
-            done = terminated or truncated
+            if terminated or truncated:
+                done = True
+                self.episode_done = True
+                break
             if self.training and abs(reward) > 1e-9:
                 done = True
-            if done:
                 break
         
         obs = np.max(np.stack(self.obs_buffer), axis=0)
         return obs, total_reward, done, False, {}
     
     def reset(self, **kwargs):
-        obs, info = self.env.reset(**kwargs)
-        obs = self.transform(obs)
-        self.obs_buffer.clear()
-        self.obs_buffer.append(obs)
-        return obs, info
+        if self.episode_ended:
+            obs, _ = self.env.reset(**kwargs)
+            obs = self.transform(obs)
+            self.obs_buffer.clear()
+            self.obs_buffer.append(obs)
+            self.episode_ended = False
+        else:
+            obs = np.max(np.stack(self.obs_buffer), axis=0)
+        return obs, _
     
     def transform(self, obs):
         # downsample by 2x
