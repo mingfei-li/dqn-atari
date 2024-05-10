@@ -44,8 +44,8 @@ class EasyPongConfig(Config):
     max_eps = 1
     min_eps = 0.1
     n_eps = 1_000_000
-    max_lr = 1e-4
-    min_lr = 1e-5
+    max_lr = 5e-5
+    min_lr = 5e-6
     n_lr = 2_500_000
     target_update_freq = 10_000
     batch_size = 96
@@ -53,7 +53,7 @@ class EasyPongConfig(Config):
     learning_start = 100_000
     buffer_size = 1_500_000
     test_freq = 10
-    clip_val = 0
-    betas = (0.95, 0.95)
+    clip_val = 10
+    betas = (0.9, 0.999)
     model = "conv_net"
-    exp_id = "easy-pong:exp-6:buf_size=1.5m,batch_size=96,learning_start=100k,lr=1e-4->1e-5,n_train=25k,n_eps=1m,clip_val=0,adam=0.95+0.95"
+    exp_id = "easy-pong:exp-7:buf_size=1.5m,batch_size=96,learning_start=100k,lr=5e-5->5e-6,n_train=25k,n_eps=1m,clip_val=10,adam"
