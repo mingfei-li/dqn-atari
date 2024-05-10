@@ -121,6 +121,11 @@ class Agent():
         )
         optimizer.zero_grad()
         loss.backward()
+        if self.config.clip_val > 1e-9:
+            nn.utils.clip_grad_norm_(
+                self.policy_model.parameters(),
+                max_norm=self.config.clip_val,
+            )
         optimizer.step()
 
         if self.t % self.config.target_update_freq == 0:
