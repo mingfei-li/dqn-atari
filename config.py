@@ -17,6 +17,7 @@ class CartPoleConfig(Config):
     test_freq = 1
     clip_val = 0
     betas = (0.9, 0.999)
+    episodic = True
     model = "mlp"
     exp_id = "exp-20,cartpole-v0,buffer=tensor"
 
@@ -36,6 +37,7 @@ class AtariPongConfig(Config):
     test_freq = 10
     clip_val = 0
     betas = (0.9, 0.999)
+    episodic = True
     model = "conv_net"
     exp_id = "exp-42:atari-pong,buf_size=1.5m,batch_size=96,learning_start=50k,lr=1e-4,n_train=5k,n_eps=2m,adam"
 
@@ -55,5 +57,6 @@ class EasyPongConfig(Config):
     test_freq = 10
     clip_val = 0
     betas = (0.9, 0.999)
+    episodic = False
     model = "conv_net"
-    exp_id = "easy-pong-v3:exp-1:buf_size=1m,batch_size=96,learning_start=100k,lr=2.5e-5->2.5e-6,n_train=100k,n_eps=2.5m"
+    exp_id = "easy-pong-v3:exp-1:buf_size=1m,batch_size=96,learning_start=100k,lr=2.5e-5->2.5e-6,n_train=100k,n_eps=2.5m,episodic=false"

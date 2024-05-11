@@ -108,7 +108,8 @@ class Agent():
         with torch.no_grad():
             tq = self.target_model(next_states)
         tq_max, _ = torch.max(tq, dim=1) 
-        tq_max *= 1 - dones.int()
+        if self.config.episodic:
+            tq_max *= 1 - dones.int()
         targets = rewards + self.config.gamma * tq_max
 
         self.policy_model.train()
