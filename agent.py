@@ -161,6 +161,9 @@ class Agent():
             done = terminated or truncated
             buffer.add_done(done)
 
+            if abs(reward) > 1e-9:
+                assert done
+
             total_reward += reward
             episode_len += 1
 
@@ -171,7 +174,6 @@ class Agent():
         self.testing_logger.add_episode_stats("testing_reward", total_reward)
         self.testing_logger.add_episode_stats("testing_episode_len", episode_len)
         self.testing_logger.flush(self.t)
-        return total_reward
 
     def save_model(self, model_name):
         path = f"results/{self.config.exp_id}/{self.run_id}/models"

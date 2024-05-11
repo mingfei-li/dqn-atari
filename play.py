@@ -2,7 +2,7 @@ from config import Config
 from conv_net import ConvNet
 from gymnasium.experimental.wrappers import AtariPreprocessingV0, RecordVideoV0
 from mlp_model import MLPModel
-from pong_wrapper import PongWrapper
+from pong_wrapper import EasyPongWrapper
 from replay_buffer_deque import ReplayBuffer
 import gymnasium as gym
 import torch
@@ -63,7 +63,7 @@ def atari_pong(device, model_path, video_path):
 
 def easy_pong(device, model_path, video_path):
     env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
-    env = PongWrapper(env)
+    env = EasyPongWrapper(env)
     env = RecordVideoV0(env, video_folder=video_path)
 
     model = ConvNet(

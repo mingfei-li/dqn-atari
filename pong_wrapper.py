@@ -2,7 +2,7 @@ from collections import deque
 import gymnasium as gym
 import numpy as np
 
-class PongWrapper(gym.Wrapper):
+class EasyPongWrapper(gym.Wrapper):
     def __init__(self, env, skip_frame=4, training=False):
         super().__init__(env)
         self.skip_frame = skip_frame
@@ -12,6 +12,8 @@ class PongWrapper(gym.Wrapper):
         self.episode_done = True
     
     def step(self, action):
+        assert not self.episode_done
+
         total_reward = 0
         for _ in range(self.skip_frame):
             obs, reward, terminated, truncated, _ = self.env.step(action)
@@ -26,6 +28,7 @@ class PongWrapper(gym.Wrapper):
                 done = True
                 break
         
+        assert abs(total_reward) < 1+1e-9
         obs = np.max(np.stack(self.obs_buffer), axis=0)
         return obs, total_reward, done, False, {}
     
