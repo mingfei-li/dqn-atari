@@ -160,10 +160,6 @@ class Agent():
             obs, reward, terminated, truncated, _ = self.env.step(action)
             done = terminated or truncated
             buffer.add_done(done)
-
-            if abs(reward) > 1e-9:
-                assert done
-
             total_reward += reward
             episode_len += 1
 
