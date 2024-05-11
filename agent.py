@@ -11,8 +11,9 @@ import torch.nn as nn
 import os
 
 class Agent():
-    def __init__(self, env, config: Config, run_id):
+    def __init__(self, env, test_env, config: Config, run_id):
         self.env = env
+        self.test_env = test_env
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.config = config
         self.run_id = run_id
@@ -145,10 +146,10 @@ class Agent():
         episode_len = 0
         buffer = ReplayBuffer(
             400,
-            self.env.observation_space.shape,
+            self.test_env.observation_space.shape,
             self.device,
         )
-        obs, _ = self.env.reset()
+        obs, _ = self.test_env.reset()
         done = False
         while not done:
             state = buffer.get_state_for_new_obs(obs)
@@ -157,7 +158,7 @@ class Agent():
                 q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
             action = torch.argmax(q, dim=0).item()
 
-            obs, reward, terminated, truncated, _ = self.env.step(action)
+            obs, reward, terminated, truncated, _ = self.test_env.step(action)
             done = terminated or truncated
             buffer.add_done(done)
             total_reward += reward

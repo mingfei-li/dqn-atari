@@ -27,8 +27,10 @@ def easy_pong():
     for run_id in range(5):
         env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
         env = EasyPongWrapper(env, training=True)
+        test_env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
+        test_env = EasyPongWrapper(test_env, training=False)
         config = EasyPongConfig()
-        agent = Agent(env, config, run_id)
+        agent = Agent(env, test_env, config, run_id)
         agent.train()
         env.close()
 
