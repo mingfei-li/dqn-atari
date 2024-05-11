@@ -10,27 +10,27 @@ class EasyPongWrapper(gym.Wrapper):
         self.training = training
         self.observation_space = gym.spaces.Box(0, 1, shape=(84,84), dtype=np.float32)
         self.episode_done = True
+        self.episode_length = 0
     
     def step(self, action):
-        assert not self.episode_done
-
         total_reward = 0
         for _ in range(self.skip_frame):
             obs, reward, terminated, truncated, _ = self.env.step(action)
             self.obs_buffer.append(self.transform(obs))
             total_reward += reward
-            done = False
+            self.episode_length += 1
+            if self.episode_length >= 25_000:
+                truncated = True
+            
             if terminated or truncated:
-                done = True
                 self.episode_done = True
                 break
             if self.training and abs(reward) > 1e-9:
-                done = True
+                terminated = True
                 break
-        
-        assert abs(total_reward) < 1+1e-9
+
         obs = np.max(np.stack(self.obs_buffer), axis=0)
-        return obs, total_reward, done, False, {}
+        return obs, total_reward, terminated, truncated, {}
     
     def reset(self, **kwargs):
         if self.episode_done:
@@ -39,6 +39,7 @@ class EasyPongWrapper(gym.Wrapper):
             self.obs_buffer.clear()
             self.obs_buffer.append(obs)
             self.episode_done = False
+            self.episode_length = 0
         else:
             obs = np.max(np.stack(self.obs_buffer), axis=0)
         return obs, None
