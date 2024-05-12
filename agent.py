@@ -82,7 +82,7 @@ class Agent():
                 self.replay_buffer.add_reward(reward)
                 self.replay_buffer.add_done(done)
 
-                if self.t >= self.config.learning_start:
+                if self.t >= self.config.learning_start and self.t % self.config.training_freq == 0:
                     self.train_step()
 
                 self.eps = max(self.eps - self.eps_step, self.config.min_eps)
@@ -134,6 +134,9 @@ class Agent():
         if self.t % self.config.target_update_freq == 0:
             self.target_model.load_state_dict(self.policy_model.state_dict())
 
+        if self.t % self.config.model_save_freq == 0:
+            self.save_model(f"model-checkpoint-{self.t}.pt")
+
         grad_norm = 0
         for p in self.policy_model.parameters():
             param_norm = p.grad.data.norm(2)
@@ -165,9 +168,9 @@ class Agent():
             total_reward += reward
             episode_len += 1
 
-        if total_reward >= self.max_reward:
+        if total_reward > self.max_reward:
             self.max_reward = total_reward
-            self.save_model(f"model-{total_reward}.pt")
+            self.save_model(f"model-record-{total_reward}-{self.t}.pt")
 
         self.testing_logger.add_episode_stats("testing_reward", total_reward)
         self.testing_logger.add_episode_stats("testing_episode_len", episode_len)

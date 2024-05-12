@@ -2,7 +2,7 @@ class Config():
     pass
 
 class CartPoleConfig(Config):
-    num_episodes_train = 3000
+    num_episodes_train = 10_000
     max_eps = 0.05
     min_eps = 0.05
     n_eps = 50_000
@@ -18,8 +18,10 @@ class CartPoleConfig(Config):
     clip_val = 0
     betas = (0.9, 0.999)
     episodic = True
+    training_freq = 4
+    model_save_freq = 10_000
     model = "mlp"
-    exp_id = "exp-20,cartpole-v0,buffer=tensor"
+    exp_id = "cartpole-v0,exp-22,buffer=tensor,training_freq=4"
 
 class AtariPongConfig(Config):
     num_episodes_train = 5_000
@@ -38,6 +40,8 @@ class AtariPongConfig(Config):
     clip_val = 0
     betas = (0.9, 0.999)
     episodic = True
+    training_freq = 4
+    model_save_freq = 10_000
     model = "conv_net"
     exp_id = "exp-42:atari-pong,buf_size=1.5m,batch_size=96,learning_start=50k,lr=1e-4,n_train=5k,n_eps=2m,adam"
 
@@ -58,5 +62,7 @@ class EasyPongConfig(Config):
     clip_val = 0
     betas = (0.9, 0.999)
     episodic = False
+    training_freq = 4
+    model_save_freq = 10_000
     model = "conv_net"
     exp_id = "easy-pong-v4:exp-5:buf_size=1m,batch_size=96,learning_start=100k,lr=7.5e-5->7.5e-6,n_train=100k,n_eps=2.5m,episodic=false"

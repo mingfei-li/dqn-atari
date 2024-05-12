@@ -9,8 +9,9 @@ import sys
 def cartpole():
     for run_id in range(5):
         env = gym.make('CartPole-v0', render_mode="rgb_array")
+        test_env = gym.make('CartPole-v0', render_mode="rgb_array")
         config = CartPoleConfig()
-        agent = Agent(env, config, run_id)
+        agent = Agent(env, test_env, config, run_id)
         agent.train()
         env.close()
 
