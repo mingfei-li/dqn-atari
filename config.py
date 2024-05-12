@@ -27,23 +27,23 @@ class AtariPongConfig(Config):
     num_episodes_train = 5_000
     max_eps = 1
     min_eps = 0.1
-    n_eps = 2_000_000
-    max_lr = 1e-4
-    min_lr = 1e-4
+    n_eps = 2_500_000
+    max_lr = 7.5e-5
+    min_lr = 7.5e-6
     n_lr = 2_500_000
     target_update_freq = 10_000
     batch_size = 96
     gamma = 0.99
-    learning_start = 50_000
-    buffer_size = 1_500_000
+    learning_start = 100_000
+    buffer_size = 1_000_000
     test_freq = 10
     clip_val = 0
     betas = (0.9, 0.999)
-    episodic = True
+    episodic = False
     training_freq = 4
-    model_save_freq = 10_000
+    model_save_freq = 100_000
     model = "conv_net"
-    exp_id = "exp-42:atari-pong,buf_size=1.5m,batch_size=96,learning_start=50k,lr=1e-4,n_train=5k,n_eps=2m,adam"
+    exp_id = "pong:exp-1:batch_size=96,lr=7.5e-5->7.5e-6,n_eps=2.5m,training_freq=4"
 
 class EasyPongConfig(Config):
     num_episodes_train = 100_000
