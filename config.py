@@ -63,6 +63,6 @@ class EasyPongConfig(Config):
     betas = (0.9, 0.999)
     episodic = False
     training_freq = 4
-    model_save_freq = 10_000
+    model_save_freq = 100_000
     model = "conv_net"
-    exp_id = "easy-pong-v4:exp-5:buf_size=1m,batch_size=96,learning_start=100k,lr=7.5e-5->7.5e-6,n_train=100k,n_eps=2.5m,episodic=false"
+    exp_id = "easy-pong-v4:exp-6:buf_size=1m,batch_size=96,learning_start=100k,lr=7.5e-5->7.5e-6,n_train=100k,n_eps=2.5m,episodic=false,training_freq=4"
