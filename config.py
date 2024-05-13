@@ -24,15 +24,15 @@ class CartPoleConfig(Config):
     exp_id = "cartpole-v0,exp-22,buffer=tensor,training_freq=4"
 
 class AtariPongConfig(Config):
-    num_episodes_train = 5_000
+    num_episodes_train = 10_000
     max_eps = 1
     min_eps = 0.1
     n_eps = 5_000_000
-    max_lr = 2.5e-5
-    min_lr = 2.5e-6
+    max_lr = 7.5e-5
+    min_lr = 7.5e-6
     n_lr = 2_500_000
     target_update_freq = 10_000
-    batch_size = 32
+    batch_size = 96
     gamma = 0.99
     learning_start = 100_000
     buffer_size = 1_000_000
@@ -40,10 +40,10 @@ class AtariPongConfig(Config):
     clip_val = 0
     betas = (0.9, 0.999)
     episodic = False
-    training_freq = 1
+    training_freq = 4
     model_save_freq = 100_000
     model = "conv_net"
-    exp_id = "pong:exp-8:batch_size=32,lr=2.5e-5->2.5e-6,n_eps=5m,training_freq=1"
+    exp_id = "pong:exp-9:batch_size=96,lr=7.5e-5->7.5e-6,n_eps=5m,training_freq=1,n_train=10k"
 
 class EasyPongConfig(Config):
     num_episodes_train = 100_000
