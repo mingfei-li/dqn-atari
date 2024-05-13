@@ -40,10 +40,10 @@ class AtariPongConfig(Config):
     clip_val = 0
     betas = (0.9, 0.999)
     episodic = False
-    training_freq = 4
+    training_freq = 1
     model_save_freq = 100_000
     model = "conv_net"
-    exp_id = "pong:exp-6:batch_size=32,lr=7.5e-4->7.5e-5,n_eps=5m,training_freq=4"
+    exp_id = "pong:exp-7:batch_size=32,lr=7.5e-4->7.5e-5,n_eps=5m,training_freq=1"
 
 class EasyPongConfig(Config):
     num_episodes_train = 100_000
