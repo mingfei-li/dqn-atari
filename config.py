@@ -31,7 +31,7 @@ class AtariPongConfig(Config):
     max_lr = 7.5e-5
     min_lr = 7.5e-6
     n_lr = 2_500_000
-    target_update_freq = 2_500
+    target_update_freq = 1_000
     batch_size = 96
     gamma = 0.99
     learning_start = 100_000
@@ -43,7 +43,7 @@ class AtariPongConfig(Config):
     training_freq = 4
     model_save_freq = 1_000_000
     model = "conv_net"
-    exp_id = "pong:exp-15"
+    exp_id = "pong:exp-16"
 
 class EasyPongConfig(Config):
     num_episodes_train = 100_000
