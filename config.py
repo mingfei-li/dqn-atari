@@ -12,8 +12,6 @@ class CartPoleConfig():
     learning_start = 20_000
     buffer_size = 50_000
     test_freq = 1
-    clip_val = 0
-    betas = (0.9, 0.999)
     episodic = True
     training_freq = 4
     model_save_freq = 10_000
@@ -34,8 +32,6 @@ class PongConfig():
     learning_start = 100_000
     buffer_size = 1_000_000
     test_freq = 10
-    clip_val = 0
-    betas = (0.9, 0.999)
     episodic = False
     training_freq = 4
     model_save_freq = 1_000_000
