@@ -1,4 +1,3 @@
-from config import Config
 from conv_net import ConvNet
 from gymnasium.experimental.wrappers import AtariPreprocessingV0, RecordVideoV0
 from mlp_model import MLPModel

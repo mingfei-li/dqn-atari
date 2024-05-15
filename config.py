@@ -1,7 +1,4 @@
-class Config():
-    pass
-
-class CartPoleConfig(Config):
+class CartPoleConfig():
     num_episodes_train = 10_000
     max_eps = 0.05
     min_eps = 0.05
@@ -23,7 +20,7 @@ class CartPoleConfig(Config):
     model = "mlp"
     exp_id = "cartpole-v0,exp-22,buffer=tensor,training_freq=4"
 
-class AtariPongConfig(Config):
+class PongConfig():
     num_episodes_train = 50_000
     max_eps = 1
     min_eps = 0.1

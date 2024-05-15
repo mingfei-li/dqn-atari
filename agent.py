@@ -1,4 +1,3 @@
-from config import Config
 from logger import Logger
 from mlp_model import MLPModel
 from conv_net import ConvNet
@@ -11,7 +10,7 @@ import torch.nn as nn
 import os
 
 class Agent():
-    def __init__(self, env, test_env, config: Config, run_id):
+    def __init__(self, env, test_env, config, run_id):
         self.env = env
         self.test_env = test_env
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
