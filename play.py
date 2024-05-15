@@ -60,6 +60,20 @@ def pong(device, model_path, video_path):
     play(env, model)
     env.close()
 
+def atari(device, model_path, video_path):
+    env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array")
+    env = AtariPreprocessingV0(env, scale_obs=True)
+    env = RecordVideoV0(env, video_folder=video_path)
+
+    model = ConvNet(
+        output_units=env.action_space.n,
+    ).to(device)
+
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+    play(env, model)
+    env.close()
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python play.py <gamename> <filename>")
