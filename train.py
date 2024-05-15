@@ -16,15 +16,14 @@ def cartpole():
         env.close()
 
 def pong():
-    for run_id in range(5):
-        env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
-        env = PongWrapper(env)
-        test_env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
-        test_env = PongWrapper(test_env)
-        config = PongConfig()
-        agent = Agent(env, test_env, config, run_id)
-        agent.train()
-        env.close()
+    env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
+    env = PongWrapper(env)
+    test_env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
+    test_env = PongWrapper(test_env)
+    config = PongConfig()
+    agent = Agent(env, test_env, config, run_id=0)
+    agent.train()
+    env.close()
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
