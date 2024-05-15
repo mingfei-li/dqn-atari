@@ -1,7 +1,7 @@
 from agent import Agent
 from config import CartPoleConfig, PongConfig
 from gymnasium.experimental.wrappers import AtariPreprocessingV0
-from pong_wrapper import AtariWrapper
+from pong_wrapper import PongWrapper
 import cProfile
 import gymnasium as gym
 import sys
@@ -18,9 +18,9 @@ def cartpole():
 def pong():
     for run_id in range(5):
         env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
-        env = AtariWrapper(env)
+        env = PongWrapper(env)
         test_env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
-        test_env = AtariWrapper(test_env)
+        test_env = PongWrapper(test_env)
         config = PongConfig()
         agent = Agent(env, test_env, config, run_id)
         agent.train()

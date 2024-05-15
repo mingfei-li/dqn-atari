@@ -2,7 +2,7 @@ from collections import deque
 import gymnasium as gym
 import numpy as np
 
-class AtariWrapper(gym.Wrapper):
+class PongWrapper(gym.Wrapper):
     def __init__(self, env, skip_frame=4):
         super().__init__(env)
         self.skip_frame = skip_frame
