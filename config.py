@@ -21,7 +21,7 @@ class CartPoleConfig():
 class PongConfig():
     num_episodes_train = 8_000
     max_eps = 1
-    min_eps = 0.1
+    min_eps = 0.25
     n_eps = 5_000_000
     max_lr = 7.5e-5
     min_lr = 7.5e-6
@@ -36,7 +36,7 @@ class PongConfig():
     training_freq = 4
     model_save_freq = 1_000_000
     model = "conv_net"
-    exp_id = "pong:baseline"
+    exp_id = "pong:exp-21"
 
 class AtariConfig():
     num_episodes_train = 50_000
