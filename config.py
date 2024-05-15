@@ -19,12 +19,12 @@ class CartPoleConfig():
     exp_id = "cartpole-v0,exp-22,buffer=tensor,training_freq=4"
 
 class PongConfig():
-    num_episodes_train = 50_000
+    num_episodes_train = 5_000
     max_eps = 1
     min_eps = 0.1
-    n_eps = 10_000_000
-    max_lr = 2.5e-5
-    min_lr = 2.5e-6
+    n_eps = 5_000_000
+    max_lr = 7.5e-5
+    min_lr = 7.5e-6
     n_lr = 2_500_000
     target_update_freq = 1_000
     batch_size = 96
@@ -36,4 +36,4 @@ class PongConfig():
     training_freq = 4
     model_save_freq = 1_000_000
     model = "conv_net"
-    exp_id = "pong:exp-20"
+    exp_id = "pong:baseline"
