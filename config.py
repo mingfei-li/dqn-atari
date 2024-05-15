@@ -39,7 +39,7 @@ class PongConfig():
     exp_id = "pong:baseline"
 
 class AtariConfig():
-    num_episodes_train = 20_000
+    num_episodes_train = 50_000
     max_eps = 1
     min_eps = 0.1
     n_eps = 5_000_000
