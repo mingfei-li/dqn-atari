@@ -19,7 +19,7 @@ class CartPoleConfig():
     exp_id = "cartpole-v0,exp-22,buffer=tensor,training_freq=4"
 
 class PongConfig():
-    num_episodes_train = 5_000
+    num_episodes_train = 8_000
     max_eps = 1
     min_eps = 0.1
     n_eps = 5_000_000
