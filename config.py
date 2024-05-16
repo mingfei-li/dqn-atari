@@ -36,7 +36,7 @@ class PongConfig():
     training_freq = 4
     model_save_freq = 1_000_000
     model = "conv_net"
-    exp_id = "pong:exp-22"
+    exp_id = "pong:exp-23"
 
 class AtariConfig():
     num_episodes_train = 50_000

@@ -119,7 +119,6 @@ class Agent():
         optimizer = torch.optim.Adam(
             params=self.policy_model.parameters(),
             lr=self.lr,
-            betas=(0.95, 0.95),
             eps=0.01,
         )
         optimizer.zero_grad()
