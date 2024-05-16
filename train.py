@@ -9,29 +9,29 @@ import sys
 def cartpole():
     for run_id in range(5):
         env = gym.make('CartPole-v0', render_mode="rgb_array")
-        test_env = gym.make('CartPole-v0', render_mode="rgb_array")
+        eval_env = gym.make('CartPole-v0', render_mode="rgb_array")
         config = CartPoleConfig()
-        agent = Agent(env, test_env, config, run_id)
+        agent = Agent(env, eval_env, config, run_id)
         agent.train()
         env.close()
 
 def pong():
     env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
     env = PongWrapper(env)
-    test_env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
-    test_env = PongWrapper(test_env)
+    eval_env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
+    eval_env = PongWrapper(eval_env)
     config = PongConfig()
-    agent = Agent(env, test_env, config, run_id=0)
+    agent = Agent(env, eval_env, config, run_id=0)
     agent.train()
     env.close()
 
 def atari():
     env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array")
     env = AtariPreprocessingV0(env, scale_obs=True)
-    test_env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array")
-    test_env = AtariPreprocessingV0(test_env, scale_obs=True)
+    eval_env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array")
+    eval_env = AtariPreprocessingV0(eval_env, scale_obs=True)
     config = AtariConfig()
-    agent = Agent(env, test_env, config, run_id=0)
+    agent = Agent(env, eval_env, config, run_id=0)
     agent.train()
     env.close()
 

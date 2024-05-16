@@ -10,9 +10,9 @@ import torch.nn as nn
 import os
 
 class Agent():
-    def __init__(self, env, test_env, config, run_id):
+    def __init__(self, env, eval_env, config, run_id):
         self.env = env
-        self.test_env = test_env
+        self.eval_env = eval_env
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.config = config
         self.run_id = run_id
@@ -51,8 +51,8 @@ class Agent():
 
         self.training_logger = Logger(
             f"results/{config.exp_id}/{run_id}/logs/training")
-        self.testing_logger = Logger(
-            f"results/{config.exp_id}/{run_id}/logs/testing",
+        self.eval_logger = Logger(
+            f"results/{config.exp_id}/{run_id}/logs/eval",
         )
         self.t = 0
 
@@ -93,8 +93,8 @@ class Agent():
                 episode_len += 1
                 self.t += 1
             
-            if i % self.config.test_freq == 0:
-                self.test()
+            if i % self.config.eval_freq == 0:
+                self.eval()
 
             self.training_logger.add_episode_stats("training_reward", total_reward)
             self.training_logger.add_episode_stats("training_episode_len", episode_len)
@@ -138,15 +138,15 @@ class Agent():
         self.training_logger.add_step_stats("grad_norm", grad_norm)
         self.training_logger.add_step_stats("loss", loss.item())
         
-    def test(self):
+    def eval(self):
         total_reward = 0
         episode_len = 0
         buffer = ReplayBuffer(
             400,
-            self.test_env.observation_space.shape,
+            self.eval_env.observation_space.shape,
             self.device,
         )
-        obs, _ = self.test_env.reset()
+        obs, _ = self.eval_env.reset()
         done = False
         while not done:
             state = buffer.get_state_for_new_obs(obs)
@@ -155,7 +155,7 @@ class Agent():
                 q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
             action = torch.argmax(q, dim=0).item()
 
-            obs, reward, terminated, truncated, _ = self.test_env.step(action)
+            obs, reward, terminated, truncated, _ = self.eval_env.step(action)
             done = terminated or truncated
             buffer.add_done(done)
             total_reward += reward
@@ -165,9 +165,9 @@ class Agent():
             self.max_reward = total_reward
             self.save_model(f"model-record-{total_reward}-{self.t}.pt")
 
-        self.testing_logger.add_episode_stats("testing_reward", total_reward)
-        self.testing_logger.add_episode_stats("testing_episode_len", episode_len)
-        self.testing_logger.flush(self.t)
+        self.eval_logger.add_episode_stats("eval_reward", total_reward)
+        self.eval_logger.add_episode_stats("eval_episode_len", episode_len)
+        self.eval_logger.flush(self.t)
 
     def save_model(self, model_name):
         path = f"results/{self.config.exp_id}/{self.run_id}/models"

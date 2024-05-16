@@ -11,7 +11,7 @@ class CartPoleConfig():
     gamma = 0.99
     learning_start = 20_000
     buffer_size = 50_000
-    test_freq = 1
+    eval_freq = 1
     episodic = True
     training_freq = 4
     model_save_freq = 10_000
@@ -31,7 +31,7 @@ class PongConfig():
     gamma = 0.99
     learning_start = 100_000
     buffer_size = 1_000_000
-    test_freq = 10
+    eval_freq = 10
     episodic = False
     training_freq = 4
     model_save_freq = 1_000_000
@@ -51,7 +51,7 @@ class AtariConfig():
     gamma = 0.99
     learning_start = 100_000
     buffer_size = 1_000_000
-    test_freq = 10
+    eval_freq = 10
     episodic = True
     training_freq = 4
     model_save_freq = 1_000_000
