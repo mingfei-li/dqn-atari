@@ -1,5 +1,5 @@
 from conv_net import ConvNet
-from gymnasium.experimental.wrappers import AtariPreprocessingV0, RecordVideoV0
+from gymnasium.experimental.wrappers import RecordVideoV0
 from mlp_model import MLPModel
 from pong_wrapper import PongWrapper
 from replay_buffer_deque import ReplayBuffer
@@ -49,20 +49,6 @@ def cartpole(device, model_path, video_path):
 def pong(device, model_path, video_path):
     env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
     env = PongWrapper(env)
-    env = RecordVideoV0(env, video_folder=video_path)
-
-    model = ConvNet(
-        output_units=env.action_space.n,
-    ).to(device)
-
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.eval()
-    play(env, model)
-    env.close()
-
-def atari(device, model_path, video_path):
-    env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array")
-    env = AtariPreprocessingV0(env, scale_obs=True)
     env = RecordVideoV0(env, video_folder=video_path)
 
     model = ConvNet(

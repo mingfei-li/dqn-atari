@@ -1,7 +1,7 @@
 from logger import Logger
 from mlp_model import MLPModel
 from conv_net import ConvNet
-from replay_buffer_tensor import ReplayBuffer
+from replay_buffer_deque import ReplayBuffer
 from tqdm import tqdm
 import math
 import random
