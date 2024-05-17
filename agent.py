@@ -1,7 +1,7 @@
-from logger import Logger
-from mlp_model import MLPModel
-from conv_net import ConvNet
-from replay_buffer_deque import ReplayBuffer
+from models.mlp_model import MLPModel
+from models.conv_net import ConvNet
+from utils.logger import Logger
+from utils.replay_buffer import ReplayBuffer
 from tqdm import tqdm
 import math
 import random

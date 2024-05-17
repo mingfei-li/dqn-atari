@@ -1,6 +1,6 @@
 from agent import Agent
 from config import CartPoleConfig, PongConfig
-from pong_wrapper import PongWrapper
+from utils.pong_wrapper import PongWrapper
 import cProfile
 import gymnasium as gym
 import sys

@@ -16,7 +16,7 @@ class CartPoleConfig():
     training_freq = 4
     model_save_freq = 10_000
     model = "mlp"
-    exp_id = "cartpole-v0,exp-22,buffer=tensor,training_freq=4"
+    exp_id = "cartpole-v0:baseline"
 
 class PongConfig():
     num_episodes_train = 8_000
@@ -36,4 +36,4 @@ class PongConfig():
     training_freq = 4
     model_save_freq = 1_000_000
     model = "conv_net"
-    exp_id = "pong:deque"
+    exp_id = "pong:baseline"

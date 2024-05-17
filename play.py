@@ -1,8 +1,8 @@
-from conv_net import ConvNet
 from gymnasium.experimental.wrappers import RecordVideoV0
-from mlp_model import MLPModel
-from pong_wrapper import PongWrapper
-from replay_buffer_deque import ReplayBuffer
+from models.conv_net import ConvNet
+from models.mlp_model import MLPModel
+from utils.pong_wrapper import PongWrapper
+from utils.replay_buffer import ReplayBuffer
 import gymnasium as gym
 import torch
 import os
