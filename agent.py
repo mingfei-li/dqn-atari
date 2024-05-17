@@ -60,7 +60,7 @@ class Agent():
         for i in tqdm(range(self.config.num_episodes_train), desc=f"Run {self.run_id}"):
             total_reward = 0
             episode_len = 0
-            obs, _ = self.env.reset()
+            obs, _ = self.env.reset(seed=self.run_id)
             done = False
             while not done:
                 state = self.replay_buffer.get_state_for_new_obs(obs)
@@ -146,7 +146,7 @@ class Agent():
             self.eval_env.observation_space.shape,
             self.device,
         )
-        obs, _ = self.eval_env.reset()
+        obs, _ = self.eval_env.reset(seed=self.run_id)
         done = False
         while not done:
             state = buffer.get_state_for_new_obs(obs)
