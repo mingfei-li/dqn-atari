@@ -1,6 +1,6 @@
 from gymnasium.experimental.wrappers import RecordVideoV0
-from models.conv_net import ConvNet
-from models.mlp_model import MLPModel
+from models.cnn import CNN
+from models.mlp import MLP
 from utils.pong_wrapper import PongWrapper
 from utils.replay_buffer import ReplayBuffer
 import gymnasium as gym
@@ -37,7 +37,7 @@ def cartpole(device, model_path, video_path):
     env = gym.make('CartPole-v0', render_mode="rgb_array")
     env = RecordVideoV0(env, video_folder=video_path)
 
-    model = MLPModel(
+    model = MLP(
         in_features=env.observation_space.shape[0]*4,
         out_features=env.action_space.n,
     ).to(device)
@@ -51,7 +51,7 @@ def pong(device, model_path, video_path):
     env = PongWrapper(env)
     env = RecordVideoV0(env, video_folder=video_path)
 
-    model = ConvNet(
+    model = CNN(
         output_units=env.action_space.n,
     ).to(device)
 

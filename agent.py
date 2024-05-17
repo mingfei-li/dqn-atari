@@ -1,5 +1,5 @@
-from models.mlp_model import MLPModel
-from models.conv_net import ConvNet
+from models.cnn import CNN
+from models.mlp import MLP
 from utils.logger import Logger
 from utils.replay_buffer import ReplayBuffer
 from tqdm import tqdm
@@ -23,19 +23,19 @@ class Agent():
         self.max_reward = -math.inf
 
         if config.model == "mlp":
-            self.policy_model = MLPModel(
+            self.policy_model = MLP(
                 in_features=self.env.observation_space.shape[0]*4,
                 out_features=self.env.action_space.n,
             ).to(self.device)
-            self.target_model = MLPModel(
+            self.target_model = MLP(
                 in_features=self.env.observation_space.shape[0]*4,
                 out_features=self.env.action_space.n,
             ).to(self.device)
-        elif config.model == "conv_net":
-            self.policy_model = ConvNet(
+        elif config.model == "cnn":
+            self.policy_model = CNN(
                 output_units=self.env.action_space.n,
             ).to(self.device)
-            self.target_model = ConvNet(
+            self.target_model = CNN(
                 output_units=self.env.action_space.n,
             ).to(self.device)
         else:

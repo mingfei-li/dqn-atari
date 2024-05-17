@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class MLPModel(nn.Module):
+class MLP(nn.Module):
     def __init__(self, in_features, out_features):
         super().__init__()
 

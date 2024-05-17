@@ -13,7 +13,7 @@ class CartPoleConfig():
     buffer_size = 50_000
     eval_freq = 1
     episodic = True
-    training_freq = 4
+    training_freq = 1
     model_save_freq = 10_000
     model = "mlp"
     exp_id = "cartpole-v0:baseline"
@@ -35,5 +35,5 @@ class PongConfig():
     episodic = False
     training_freq = 4
     model_save_freq = 1_000_000
-    model = "conv_net"
+    model = "cnn"
     exp_id = "pong:baseline"
