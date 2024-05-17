@@ -12,7 +12,12 @@ import os
 class Agent():
     def __init__(self, env, eval_env, config, run_id):
         self.env = env
+        self.env.reset(seed=run_id)
+        self.env.action_space.seed(run_id)
         self.eval_env = eval_env
+        self.eval_env.reset(seed=run_id)
+        self.eval_env.action_space.seed(run_id)
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.config = config
         self.run_id = run_id
@@ -60,7 +65,7 @@ class Agent():
         for i in tqdm(range(self.config.num_episodes_train), desc=f"Run {self.run_id}"):
             total_reward = 0
             episode_len = 0
-            obs, _ = self.env.reset(seed=self.run_id)
+            obs, _ = self.env.reset()
             done = False
             while not done:
                 state = self.replay_buffer.get_state_for_new_obs(obs)
@@ -146,7 +151,7 @@ class Agent():
             self.eval_env.observation_space.shape,
             self.device,
         )
-        obs, _ = self.eval_env.reset(seed=self.run_id)
+        obs, _ = self.eval_env.reset()
         done = False
         while not done:
             state = buffer.get_state_for_new_obs(obs)
