@@ -127,6 +127,7 @@ class Agent():
         )
         optimizer.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.policy_model.parameters(), 10)
         optimizer.step()
 
         if self.t % self.config.target_update_freq == 0:

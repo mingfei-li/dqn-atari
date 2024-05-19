@@ -36,4 +36,4 @@ class PongConfig():
     training_freq = 4
     model_save_freq = 1_000_000
     model = "cnn"
-    exp_id = "pong:exp-seed42-5"
+    exp_id = "pong:exp-seed42-6-grad-clip"
