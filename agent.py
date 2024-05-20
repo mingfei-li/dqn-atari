@@ -47,6 +47,7 @@ class Agent():
             raise Exception(f"Invalid model: {config.model}")
 
         self.target_model.load_state_dict(self.policy_model.state_dict())
+        self.save_model("model-initial.pt")
 
         self.replay_buffer = ReplayBuffer(
             config.buffer_size,
