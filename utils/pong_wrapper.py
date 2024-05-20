@@ -41,4 +41,4 @@ class PongWrapper(gym.Wrapper):
         obs = obs[15:99, :]
         # pad to 84x84
         obs = np.pad(obs, ((0, 0), (2, 2)), 'constant', constant_values=0)
-        return obs / 255.0
+        return obs
