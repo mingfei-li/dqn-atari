@@ -42,7 +42,7 @@ class ReplayBuffer():
 
     def _get_state(self, i):
         if i >= 3 and not torch.any(self.dones[i-3:i]).item():
-            return self.obs[i-3:i+1] / 255.0
+            return (self.obs[i-3:i+1] / 255.0) - 0.5
 
         state = torch.zeros((4,) + self.obs[i].shape, device=self.device)
         state[3] = self.obs[i]
@@ -51,4 +51,4 @@ class ReplayBuffer():
             if self.dones[k]:
                 break
             state[3-j] = self.obs[k]
-        return state / 255.0
+        return (state / 255.0) - 0.5
