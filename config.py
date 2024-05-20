@@ -23,9 +23,9 @@ class PongConfig():
     max_eps = 1
     min_eps = 0.1
     n_eps = 5_000_000
-    max_lr = 2.5e-4
-    min_lr = 1e-4
-    n_lr = 3_000_000
+    max_lr = 3.5e-4
+    min_lr = 3.5e-5
+    n_lr = 2_500_000
     target_update_freq = 1_000
     batch_size = 96
     gamma = 0.99
