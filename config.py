@@ -27,13 +27,13 @@ class PongConfig():
     min_lr = 7.5e-6
     n_lr = 2_500_000
     target_update_freq = 1_000
-    batch_size = 128
+    batch_size = 256
     gamma = 0.99
     learning_start = 100_000
     buffer_size = 1_000_000
     eval_freq = 10
     episodic = False
-    training_freq = 4
+    training_freq = 8
     model_save_freq = 1_000_000
     model = "cnn"
-    exp_id = "pong:exp-seed42-18"
+    exp_id = "pong:exp-seed42-19"
