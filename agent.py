@@ -23,8 +23,6 @@ class Agent():
         self.run_id = run_id
         self.eps = config.max_eps
         self.eps_step = (config.max_eps - config.min_eps) / config.n_eps
-        self.lr = config.max_lr
-        self.lr_step = (config.max_lr - config.min_lr) / config.n_lr
         self.max_reward = -math.inf
 
         if config.model == "mlp":
@@ -45,6 +43,17 @@ class Agent():
             ).to(self.device)
         else:
             raise Exception(f"Invalid model: {config.model}")
+
+        self.optimizer = torch.optim.Adam(
+            params=self.policy_model.parameters(),
+            lr=config.max_lr,
+        )
+        self.lr_schedule = torch.optim.lr_scheduler.LinearLR(
+            optimizer=self.optimizer,
+            start_factor=1.0,
+            end_factor=config.min_lr/config.max_lr,
+            total_iters=config.n_lr/config.training_freq,
+        )
 
         self.target_model.load_state_dict(self.policy_model.state_dict())
         self.save_model("model-initial.pt")
@@ -91,9 +100,8 @@ class Agent():
                     self.train_step()
 
                 self.eps = max(self.eps - self.eps_step, self.config.min_eps)
-                self.lr = max(self.lr - self.lr_step, self.config.min_lr)
                 self.training_logger.add_step_stats("eps", self.eps)
-                self.training_logger.add_step_stats("lr", self.lr)
+                self.training_logger.add_step_stats("lr", self.lr_schedule.get_last_lr()[0])
 
                 total_reward += reward
                 episode_len += 1
@@ -122,13 +130,13 @@ class Agent():
         q_a = torch.gather(q, 1, actions.unsqueeze(dim=1)).squeeze(dim=1)
 
         loss = nn.MSELoss()(q_a, targets)
-        optimizer = torch.optim.Adam(
-            params=self.policy_model.parameters(),
-            lr=self.lr,
-        )
-        optimizer.zero_grad()
+
+        self.optimizer.zero_grad()
         loss.backward()
-        optimizer.step()
+        self.optimizer.step()
+        self.lr_schedule.step()
+
+        self.training_logger.add_step_stats("applied_lr", self.optimizer.param_groups[0]['lr'])
 
         if self.t % self.config.target_update_freq == 0:
             self.target_model.load_state_dict(self.policy_model.state_dict())
