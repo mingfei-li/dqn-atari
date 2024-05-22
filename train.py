@@ -19,10 +19,8 @@ def set_seed(seed):
 if __name__ == "__main__":
     env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
     env = PongWrapper(env)
-    eval_env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
-    eval_env = PongWrapper(eval_env)
     config = PongConfig()
     set_seed(config.seed)
-    agent = Agent(env, eval_env, config)
+    agent = Agent(env, config)
     agent.train()
     env.close()
