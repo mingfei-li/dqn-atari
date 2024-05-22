@@ -17,13 +17,12 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 if __name__ == "__main__":
-    run_id = 0
-    set_seed(run_id)
     env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
     env = PongWrapper(env)
     eval_env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
     eval_env = PongWrapper(eval_env)
     config = PongConfig()
-    agent = Agent(env, eval_env, config, run_id)
+    set_seed(config.seed)
+    agent = Agent(env, eval_env, config)
     agent.train()
     env.close()
