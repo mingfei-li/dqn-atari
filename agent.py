@@ -1,5 +1,4 @@
 from models.cnn import CNN
-from models.mlp import MLP
 from utils.logger import Logger
 from utils.replay_buffer import ReplayBuffer
 from tqdm import tqdm
@@ -25,24 +24,12 @@ class Agent():
         self.eps_step = (config.max_eps - config.min_eps) / config.n_eps
         self.max_reward = -math.inf
 
-        if config.model == "mlp":
-            self.policy_model = MLP(
-                in_features=self.env.observation_space.shape[0]*4,
-                out_features=self.env.action_space.n,
-            ).to(self.device)
-            self.target_model = MLP(
-                in_features=self.env.observation_space.shape[0]*4,
-                out_features=self.env.action_space.n,
-            ).to(self.device)
-        elif config.model == "cnn":
-            self.policy_model = CNN(
-                output_units=self.env.action_space.n,
-            ).to(self.device)
-            self.target_model = CNN(
-                output_units=self.env.action_space.n,
-            ).to(self.device)
-        else:
-            raise Exception(f"Invalid model: {config.model}")
+        self.policy_model = CNN(
+            output_units=self.env.action_space.n,
+        ).to(self.device)
+        self.target_model = CNN(
+            output_units=self.env.action_space.n,
+        ).to(self.device)
 
         self.optimizer = torch.optim.Adam(
             params=self.policy_model.parameters(),

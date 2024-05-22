@@ -1,6 +1,5 @@
 from gymnasium.experimental.wrappers import RecordVideoV0
 from models.cnn import CNN
-from models.mlp import MLP
 from utils.pong_wrapper import PongWrapper
 from utils.replay_buffer import ReplayBuffer
 import gymnasium as gym
@@ -37,20 +36,18 @@ def play(env, model):
     print(f"Reward: {total_reward}")
     print(f"Episode Length: {episode_len}")
 
-def cartpole(device, model_path, video_path):
-    env = gym.make('CartPole-v0', render_mode="rgb_array")
-    env = RecordVideoV0(env, video_folder=video_path)
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python play.py <filename>")
+        sys.exit(1)
+    model_path = sys.argv[1]
 
-    model = MLP(
-        in_features=env.observation_space.shape[0]*4,
-        out_features=env.action_space.n,
-    ).to(device)
-    model.load_state_dict(torch.load(model_path))
-    model.eval()
-    play(env, model)
-    env.close()
+    base_dir = os.path.dirname(os.path.dirname(model_path))
+    model_name = os.path.basename(model_path)
+    video_path = os.path.join(base_dir, 'videos', model_name)
 
-def pong(device, model_path, video_path):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
     env = PongWrapper(env)
     env = RecordVideoV0(env, video_folder=video_path)
@@ -63,17 +60,3 @@ def pong(device, model_path, video_path):
     model.eval()
     play(env, model)
     env.close()
-
-if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python play.py <gamename> <filename>")
-        sys.exit(1)
-    model_path = sys.argv[2]
-
-    base_dir = os.path.dirname(os.path.dirname(model_path))
-    model_name = os.path.basename(model_path)
-    video_path = os.path.join(base_dir, 'videos', model_name)
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    globals()[sys.argv[1]](device, model_path, video_path)

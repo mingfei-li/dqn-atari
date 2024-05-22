@@ -1,5 +1,5 @@
 from agent import Agent
-from config import CartPoleConfig, PongConfig
+from config import PongConfig
 from utils.pong_wrapper import PongWrapper
 import gymnasium as gym
 import numpy as np
@@ -16,17 +16,7 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-def cartpole():
-    for run_id in range(5):
-        set_seed(run_id)
-        env = gym.make('CartPole-v0', render_mode="rgb_array")
-        eval_env = gym.make('CartPole-v0', render_mode="rgb_array")
-        config = CartPoleConfig()
-        agent = Agent(env, eval_env, config, run_id)
-        agent.train()
-        env.close()
-
-def pong():
+if __name__ == "__main__":
     run_id = 0
     set_seed(run_id)
     env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
@@ -37,9 +27,3 @@ def pong():
     agent = Agent(env, eval_env, config, run_id)
     agent.train()
     env.close()
-
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python play.py <filename>")
-        sys.exit(1)
-    globals()[sys.argv[1]]()
