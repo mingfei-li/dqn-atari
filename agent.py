@@ -48,12 +48,19 @@ class Agent():
             params=self.policy_model.parameters(),
             lr=config.max_lr,
         )
-        self.lr_schedule = torch.optim.lr_scheduler.LinearLR(
-            optimizer=self.optimizer,
-            start_factor=1.0,
-            end_factor=config.min_lr/config.max_lr,
-            total_iters=config.n_lr/config.training_freq,
-        )
+        if hasattr(config, 'lr_decay'):
+            self.lr_schedule = torch.optim.lr_scheduler.StepLR(
+                optimizer=self.optimizer,
+                step_size=1000,
+                gamma=config.lr_decay,
+            )
+        else:
+            self.lr_schedule = torch.optim.lr_scheduler.LinearLR(
+                optimizer=self.optimizer,
+                start_factor=1.0,
+                end_factor=config.min_lr/config.max_lr,
+                total_iters=config.n_lr/config.training_freq,
+            )
 
         self.target_model.load_state_dict(self.policy_model.state_dict())
         self.save_model("model-initial.pt")
