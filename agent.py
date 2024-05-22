@@ -136,8 +136,6 @@ class Agent():
         self.optimizer.step()
         self.lr_schedule.step()
 
-        self.training_logger.add_step_stats("applied_lr", self.optimizer.param_groups[0]['lr'])
-
         if self.t % self.config.target_update_freq == 0:
             self.target_model.load_state_dict(self.policy_model.state_dict())
 
