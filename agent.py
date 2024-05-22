@@ -48,11 +48,12 @@ class Agent():
             params=self.policy_model.parameters(),
             lr=config.max_lr,
         )
-        if hasattr(config, 'lr_decay'):
-            self.lr_schedule = torch.optim.lr_scheduler.StepLR(
+        if hasattr(config, 'lr_half_life'):
+            half_life_iters = config.lr_half_life / config.training_freq
+            gamma = 0.5**(1.0/half_life_iters)
+            self.lr_schedule = torch.optim.lr_scheduler.ExponentialLR(
                 optimizer=self.optimizer,
-                step_size=1000,
-                gamma=config.lr_decay,
+                gamma=gamma,
             )
         else:
             self.lr_schedule = torch.optim.lr_scheduler.LinearLR(
