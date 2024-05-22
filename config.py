@@ -1,5 +1,4 @@
 class PongConfig():
-    seed = 0
     num_episodes_train = 8_000
     max_eps = 1
     min_eps = 0.1
@@ -17,4 +16,5 @@ class PongConfig():
     episodic = False
     training_freq = 4
     model_save_freq = 1_000_000
-    exp_id = "exp-0"
+    seed = 0
+    exp_id = "exp-1"
