@@ -27,7 +27,7 @@ def cartpole():
         env.close()
 
 def pong():
-    run_id = 42
+    run_id = 1234
     set_seed(run_id)
     env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
     env = PongWrapper(env)
