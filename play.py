@@ -4,6 +4,7 @@ from models.mlp import MLP
 from utils.pong_wrapper import PongWrapper
 from utils.replay_buffer import ReplayBuffer
 import gymnasium as gym
+import random
 import torch
 import os
 import sys
@@ -19,10 +20,13 @@ def play(env, model):
     )
     done = False
     while not done:
-        state = buffer.get_state_for_new_obs(obs)
-        with torch.no_grad():
-            q = model(torch.unsqueeze(state, dim=0))[0]
-        action = torch.argmax(q, dim=0).item()
+        if random.random() < 0.01:
+            action = env.action_space.sample()
+        else:
+            state = buffer.get_state_for_new_obs(obs)
+            with torch.no_grad():
+                q = model(torch.unsqueeze(state, dim=0))[0]
+            action = torch.argmax(q, dim=0).item()
 
         obs, reward, terminated, truncated, _ = env.step(action)
         done = terminated or truncated

@@ -169,11 +169,14 @@ class Agent():
         obs, _ = self.eval_env.reset()
         done = False
         while not done:
-            state = buffer.get_state_for_new_obs(obs)
-            self.policy_model.eval()
-            with torch.no_grad():
-                q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
-            action = torch.argmax(q, dim=0).item()
+            if random.random() < 0.01:
+                action = self.eval_env.action_space.sample()
+            else:
+                state = buffer.get_state_for_new_obs(obs)
+                self.policy_model.eval()
+                with torch.no_grad():
+                    q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
+                action = torch.argmax(q, dim=0).item()
 
             obs, reward, terminated, truncated, _ = self.eval_env.step(action)
             done = terminated or truncated
