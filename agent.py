@@ -9,10 +9,11 @@ import torch.nn as nn
 import os
 
 class Agent():
-    def __init__(self, env, config):
+    def __init__(self, env, config, run_id):
         self.env = env
-        self.env.reset(seed=config.seed)
-        self.env.action_space.seed(config.seed)
+        self.env.reset(seed=run_id)
+        self.env.action_space.seed(run_id)
+        self.run_id = run_id
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.config = config
@@ -56,14 +57,14 @@ class Agent():
         )
 
         self.training_logger = Logger(
-            f"results/{config.exp_id}/{config.seed}/logs/training")
+            f"results/{config.exp_id}/{run_id}/logs/training")
         self.eval_logger = Logger(
-            f"results/{config.exp_id}/{config.seed}/logs/eval",
+            f"results/{config.exp_id}/{run_id}/logs/eval",
         )
         self.t = 0
 
     def train(self):
-        for i in tqdm(range(self.config.num_episodes_train), desc=f"Run {self.config.seed}"):
+        for i in tqdm(range(self.config.num_episodes_train), desc=f"Run {self.run_id}"):
             total_reward = 0
             episode_len = 0
             obs, _ = self.env.reset()
@@ -176,7 +177,7 @@ class Agent():
         self.eval_logger.flush(self.t)
 
     def save_model(self, model_name):
-        path = f"results/{self.config.exp_id}/{self.config.seed}/models"
+        path = f"results/{self.config.exp_id}/{self.run_id}/models"
         if not os.path.exists(path):
             os.makedirs(path)
 
