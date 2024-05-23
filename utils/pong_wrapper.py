@@ -1,6 +1,7 @@
 from collections import deque
 import gymnasium as gym
 import numpy as np
+import random
 
 class PongWrapper(gym.Wrapper):
     def __init__(self, env, skip_frame=4):
@@ -27,11 +28,18 @@ class PongWrapper(gym.Wrapper):
         return obs, total_reward, terminated, truncated, {}
     
     def reset(self, **kwargs):
-        obs, info = self.env.reset(**kwargs)
-        obs = self.transform(obs)
         self.obs_buffer.clear()
-        self.obs_buffer.append(obs)
+        obs, info = self.env.reset(**kwargs)
+        self.obs_buffer.append(self.transform(obs))
         self.episode_length = 0
+
+        noop = random.randint(0, 30)
+        for _ in range(noop):
+            action = self.env.action_space.sample()
+            obs, *_ = self.env.step(action)
+            self.obs_buffer.append(self.transform(obs))
+
+        obs = np.max(np.stack(self.obs_buffer), axis=0)
         return obs, info
     
     def transform(self, obs):
