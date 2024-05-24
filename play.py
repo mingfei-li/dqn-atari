@@ -19,7 +19,7 @@ def play(env, model):
     )
     done = False
     while not done:
-        if random.random() < 0.01:
+        if random.random() < 0.05:
             action = env.action_space.sample()
         else:
             state = buffer.get_state_for_new_obs(obs)
