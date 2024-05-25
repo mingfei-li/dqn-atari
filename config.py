@@ -1,5 +1,5 @@
 class PongConfig():
-    num_episodes_train = 4_000
+    num_episodes_train = 5_000
     max_eps = 1
     min_eps = 0.1
     n_eps = 5_000_000
