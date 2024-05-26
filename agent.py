@@ -30,22 +30,13 @@ class Agent():
 
         self.optimizer = torch.optim.Adam(
             params=self.policy_model.parameters(),
-            lr=config.max_lr,
+            lr=config.initial_lr,
         )
-        if hasattr(config, 'lr_half_life'):
-            half_life_iters = config.lr_half_life / config.training_freq
-            gamma = 0.5**(1.0/half_life_iters)
-            self.lr_schedule = torch.optim.lr_scheduler.ExponentialLR(
-                optimizer=self.optimizer,
-                gamma=gamma,
-            )
-        else:
-            self.lr_schedule = torch.optim.lr_scheduler.LinearLR(
-                optimizer=self.optimizer,
-                start_factor=1.0,
-                end_factor=config.min_lr/config.max_lr,
-                total_iters=config.n_lr/config.training_freq,
-            )
+        half_life_iters = config.lr_half_life / config.training_freq
+        self.lr_schedule = torch.optim.lr_scheduler.ExponentialLR(
+            optimizer=self.optimizer,
+            gamma=0.5**(1.0/half_life_iters),
+        )
 
         self.target_model.load_state_dict(self.policy_model.state_dict())
         self.save_model("model-initial.pt")
