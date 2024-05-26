@@ -16,4 +16,4 @@ class PongConfig():
     episodic = False
     training_freq = 4
     model_save_freq = 1_000_000
-    exp_id = "exp-5"
+    exp_id = "exp-6"

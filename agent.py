@@ -153,7 +153,7 @@ class Agent():
         obs, _ = self.env.reset()
         done = False
         while not done:
-            if random.random() < 0.05:
+            if random.random() < 0.01:
                 action = self.env.action_space.sample()
             else:
                 state = buffer.get_state_for_new_obs(obs)
