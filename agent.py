@@ -21,15 +21,15 @@ class Agent():
         self.eps_step = (config.max_eps - config.min_eps) / config.n_eps
         self.max_reward = -math.inf
 
-        self.policy_model = CNN(
+        self.policy_network = CNN(
             output_units=self.env.action_space.n,
         ).to(self.device)
-        self.target_model = CNN(
+        self.target_network = CNN(
             output_units=self.env.action_space.n,
         ).to(self.device)
 
         self.optimizer = torch.optim.Adam(
-            params=self.policy_model.parameters(),
+            params=self.policy_network.parameters(),
             lr=config.initial_lr,
         )
         half_life_iters = config.lr_half_life / config.training_freq
@@ -38,7 +38,7 @@ class Agent():
             gamma=0.5**(1.0/half_life_iters),
         )
 
-        self.target_model.load_state_dict(self.policy_model.state_dict())
+        self.target_network.load_state_dict(self.policy_network.state_dict())
         self.save_model("model-initial.pt")
 
         self.replay_buffer = ReplayBuffer(
@@ -67,9 +67,9 @@ class Agent():
 
                     action = self.env.action_space.sample()
                 else:
-                    self.policy_model.eval()
+                    self.policy_network.eval()
                     with torch.no_grad():
-                        q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
+                        q = self.policy_network(torch.unsqueeze(state, dim=0))[0]
                     action = torch.argmax(q, dim=0).item()
                     self.training_logger.add_step_stats("q_a", q[action].item())
 
@@ -100,16 +100,16 @@ class Agent():
     def train_step(self):
         states, actions, rewards, dones, next_states = self.replay_buffer.sample(self.config.batch_size)
 
-        self.target_model.eval()
+        self.target_network.eval()
         with torch.no_grad():
-            tq = self.target_model(next_states)
+            tq = self.target_network(next_states)
         tq_max, _ = torch.max(tq, dim=1) 
         if self.config.episodic:
             tq_max *= 1 - dones.int()
         targets = rewards + self.config.gamma * tq_max
 
-        self.policy_model.train()
-        q = self.policy_model(states)
+        self.policy_network.train()
+        q = self.policy_network(states)
         q_a = torch.gather(q, 1, actions.unsqueeze(dim=1)).squeeze(dim=1)
 
         loss = nn.MSELoss()(q_a, targets)
@@ -120,13 +120,13 @@ class Agent():
         self.lr_schedule.step()
 
         if self.t % self.config.target_update_freq == 0:
-            self.target_model.load_state_dict(self.policy_model.state_dict())
+            self.target_network.load_state_dict(self.policy_network.state_dict())
 
         if self.t % self.config.model_save_freq == 0:
             self.save_model(f"model-checkpoint-{self.t}.pt")
 
         grad_norm = 0
-        for p in self.policy_model.parameters():
+        for p in self.policy_network.parameters():
             param_norm = p.grad.data.norm(2)
             grad_norm += param_norm.item() ** 2
         grad_norm = grad_norm ** 0.5
@@ -148,9 +148,9 @@ class Agent():
                 action = self.env.action_space.sample()
             else:
                 state = buffer.get_state_for_new_obs(obs)
-                self.policy_model.eval()
+                self.policy_network.eval()
                 with torch.no_grad():
-                    q = self.policy_model(torch.unsqueeze(state, dim=0))[0]
+                    q = self.policy_network(torch.unsqueeze(state, dim=0))[0]
                 action = torch.argmax(q, dim=0).item()
 
             obs, reward, terminated, truncated, _ = self.env.step(action)
@@ -172,5 +172,5 @@ class Agent():
         if not os.path.exists(path):
             os.makedirs(path)
 
-        self.policy_model.eval()
-        torch.save(self.policy_model.state_dict(), f"{path}/{model_name}")
+        self.policy_network.eval()
+        torch.save(self.policy_network.state_dict(), f"{path}/{model_name}")
