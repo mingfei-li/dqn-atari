@@ -11,7 +11,7 @@ class PongConfig():
     learning_start = 100_000
     buffer_size = 1_000_000
     eval_freq = 10
-    episodic = False
+    episodic = True
     training_freq = 4
     model_save_freq = 1_000_000
-    exp_id = "exp-6"
+    exp_id = "exp-7"
