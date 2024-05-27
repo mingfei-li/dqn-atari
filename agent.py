@@ -48,9 +48,9 @@ class Agent():
         )
 
         self.training_logger = Logger(
-            f"results/{config.exp_id}/{run_id}/logs/training")
+            f"results/{config.game}/{config.exp_id}/{run_id}/logs/training")
         self.eval_logger = Logger(
-            f"results/{config.exp_id}/{run_id}/logs/eval",
+            f"results/{config.game}/{config.exp_id}/{run_id}/logs/eval",
         )
         self.t = 0
 
@@ -168,7 +168,7 @@ class Agent():
         self.eval_logger.flush(self.t)
 
     def save_model(self, model_name):
-        path = f"results/{self.config.exp_id}/{self.run_id}/models"
+        path = f"results/{self.config.game}/{self.config.exp_id}/{self.run_id}/models"
         if not os.path.exists(path):
             os.makedirs(path)
 

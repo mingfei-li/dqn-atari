@@ -1,6 +1,6 @@
 from gymnasium.experimental.wrappers import RecordVideoV0
+from gymnasium.experimental.wrappers import AtariPreprocessingV0
 from models.cnn import CNN
-from utils.pong_wrapper import PongWrapper
 from utils.replay_buffer import ReplayBuffer
 import gymnasium as gym
 import random
@@ -37,10 +37,11 @@ def play(env, model):
     print(f"Episode Length: {episode_len}")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python play.py <filename>")
+    if len(sys.argv) != 3:
+        print("Usage: python play.py <game> <filename>")
         sys.exit(1)
-    model_path = sys.argv[1]
+    game = sys.argv[1]
+    model_path = sys.argv[2]
 
     base_dir = os.path.dirname(os.path.dirname(model_path))
     model_name = os.path.basename(model_path)
@@ -48,8 +49,11 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
-    env = PongWrapper(env)
+    env = gym.make(
+        f'{game.capitalize()}NoFrameskip-v4',
+        render_mode="rgb_array",
+    )
+    env = AtariPreprocessingV0(env)
     env = RecordVideoV0(env, video_folder=video_path)
 
     model = CNN(

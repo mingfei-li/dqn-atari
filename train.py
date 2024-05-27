@@ -1,6 +1,5 @@
 from agent import Agent
-from config import PongConfig
-from utils.pong_wrapper import PongWrapper
+from config import Config
 import gymnasium as gym
 from gymnasium.experimental.wrappers import AtariPreprocessingV0
 import numpy as np
@@ -17,11 +16,12 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 if __name__ == "__main__":
-    # env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array", obs_type="grayscale")
-    # env = PongWrapper(env)
-    env = gym.make('PongNoFrameskip-v4', render_mode="rgb_array")
+    config = Config()
+    env = gym.make(
+        f'{config.game.capitalize()}NoFrameskip-v4',
+        render_mode="rgb_array",
+    )
     env = AtariPreprocessingV0(env)
-    config = PongConfig()
     for run_id in [0, 42, 1234, 9999, 11111]:
         set_seed(run_id)
         agent = Agent(env, config, run_id)
