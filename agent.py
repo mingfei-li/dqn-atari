@@ -52,53 +52,58 @@ class Agent():
         self.eval_logger = Logger(
             f"results/{config.game}/{config.exp_id}/{run_id}/logs/eval",
         )
-        self.t = 0
 
     def train(self):
-        for i in tqdm(range(self.config.num_episodes_train), desc=f"Run {self.run_id}"):
-            total_reward = 0
-            episode_len = 0
-            obs, _ = self.env.reset()
-            done = False
-            while not done:
-                state = self.replay_buffer.get_state_for_new_obs(obs)
-                if (random.random() < self.eps or 
-                    self.t < self.config.learning_start):
+        episode_reward = 0
+        episode_len = 0
+        obs, _ = self.env.reset()
+        for t in tqdm(range(self.config.n_steps_train), desc=f"Run {self.run_id}"):
+            state = self.replay_buffer.get_state_for_new_obs(obs)
+            if random.random() < self.eps or t < self.config.learning_start:
+                action = self.env.action_space.sample()
+            else:
+                self.policy_network.eval()
+                with torch.no_grad():
+                    q = self.policy_network(torch.unsqueeze(state, dim=0))[0]
+                action = torch.argmax(q, dim=0).item()
+                self.training_logger.add_step_stats("q_a", q[action].item())
 
-                    action = self.env.action_space.sample()
-                else:
-                    self.policy_network.eval()
-                    with torch.no_grad():
-                        q = self.policy_network(torch.unsqueeze(state, dim=0))[0]
-                    action = torch.argmax(q, dim=0).item()
-                    self.training_logger.add_step_stats("q_a", q[action].item())
+            obs, reward, terminated, truncated, _ = self.env.step(action)
+            done = terminated or truncated
+            self.replay_buffer.add_action(action)
+            self.replay_buffer.add_reward(reward)
+            self.replay_buffer.add_done(done)
 
-                obs, reward, terminated, truncated, _ = self.env.step(action)
-                done = terminated or truncated
-                self.replay_buffer.add_action(action)
-                self.replay_buffer.add_reward(reward)
-                self.replay_buffer.add_done(done)
+            if t >= self.config.learning_start and t % self.config.training_freq == 0:
+                self.train_step(t)
 
-                if self.t >= self.config.learning_start and self.t % self.config.training_freq == 0:
-                    self.train_step()
+            if t % self.config.eval_freq == 0:
+                self.eval(t)
 
-                self.eps = max(self.eps - self.eps_step, self.config.min_eps)
-                self.training_logger.add_step_stats("eps", self.eps)
-                self.training_logger.add_step_stats("lr", self.lr_schedule.get_last_lr()[0])
+            self.eps = max(self.eps - self.eps_step, self.config.min_eps)
+            self.training_logger.add_step_stats("eps", self.eps)
+            episode_reward += reward
+            episode_len += 1
 
-                total_reward += reward
-                episode_len += 1
-                self.t += 1
-            
-            if i % self.config.eval_freq == 0:
-                self.eval()
+            if done:
+                self.training_logger.add_episode_stats(
+                    "training_reward",
+                    episode_reward,
+                )
+                self.training_logger.add_episode_stats(
+                    "training_episode_len", 
+                    episode_len,
+                )
+                self.training_logger.flush(t)
+                episode_reward = 0
+                episode_len = 0
+                obs, _ = self.env.reset()
+                done = False
 
-            self.training_logger.add_episode_stats("training_reward", total_reward)
-            self.training_logger.add_episode_stats("training_episode_len", episode_len)
-            self.training_logger.flush(self.t)
-
-    def train_step(self):
-        states, actions, rewards, dones, next_states = self.replay_buffer.sample(self.config.batch_size)
+    def train_step(self, t):
+        states, actions, rewards, dones, next_states = (
+            self.replay_buffer.sample(self.config.batch_size)
+        )
 
         self.target_network.eval()
         with torch.no_grad():
@@ -119,11 +124,11 @@ class Agent():
         self.optimizer.step()
         self.lr_schedule.step()
 
-        if self.t % self.config.target_update_freq == 0:
+        if t % self.config.target_update_freq == 0:
             self.target_network.load_state_dict(self.policy_network.state_dict())
 
-        if self.t % self.config.model_save_freq == 0:
-            self.save_model(f"model-checkpoint-{self.t}.pt")
+        if t % self.config.model_save_freq == 0:
+            self.save_model(f"model-checkpoint-{t}.pt")
 
         grad_norm = 0
         for p in self.policy_network.parameters():
@@ -132,12 +137,16 @@ class Agent():
         grad_norm = grad_norm ** 0.5
         self.training_logger.add_step_stats("grad_norm", grad_norm)
         self.training_logger.add_step_stats("loss", loss.item())
+        self.training_logger.add_step_stats(
+            "lr",
+            self.lr_schedule.get_last_lr()[0],
+        )
         
-    def eval(self):
-        total_reward = 0
+    def eval(self, t):
+        episode_reward = 0
         episode_len = 0
         buffer = ReplayBuffer(
-            400,
+            10_000,
             self.env.observation_space.shape,
             self.device,
         )
@@ -155,17 +164,16 @@ class Agent():
 
             obs, reward, terminated, truncated, _ = self.env.step(action)
             done = terminated or truncated
-            buffer.add_done(done)
-            total_reward += reward
+            episode_reward += reward
             episode_len += 1
 
-        if total_reward > self.max_reward:
-            self.max_reward = total_reward
-            self.save_model(f"model-record-{total_reward}-{self.t}.pt")
+        if episode_reward > self.max_reward:
+            self.max_reward = episode_reward
+            self.save_model(f"model-record-{episode_reward}-{t}.pt")
 
-        self.eval_logger.add_episode_stats("eval_reward", total_reward)
+        self.eval_logger.add_episode_stats("eval_reward", episode_reward)
         self.eval_logger.add_episode_stats("eval_episode_len", episode_len)
-        self.eval_logger.flush(self.t)
+        self.eval_logger.flush(t)
 
     def save_model(self, model_name):
         path = f"results/{self.config.game}/{self.config.exp_id}/{self.run_id}/models"

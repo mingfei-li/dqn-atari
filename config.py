@@ -1,5 +1,5 @@
 class Config():
-    num_episodes_train = 5_000
+    n_steps_train = 5_000_000
     max_eps = 1
     min_eps = 0.1
     n_eps = 5_000_000
@@ -10,9 +10,9 @@ class Config():
     gamma = 0.99
     learning_start = 100_000
     buffer_size = 1_000_000
-    eval_freq = 10
+    eval_freq = 10_000
     episodic = True
     training_freq = 4
     model_save_freq = 1_000_000
     game = "breakout"
-    exp_id = "baseline"
+    exp_id = "exp-1"

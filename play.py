@@ -13,7 +13,7 @@ def play(env, model):
     total_reward = 0
     episode_len = 0
     buffer = ReplayBuffer(
-        400,
+        10_000,
         env.observation_space.shape,
         device,
     )
@@ -29,7 +29,6 @@ def play(env, model):
 
         obs, reward, terminated, truncated, _ = env.step(action)
         done = terminated or truncated
-        buffer.add_done(done)
         total_reward += reward
         episode_len += 1
     
