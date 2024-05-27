@@ -14,5 +14,5 @@ class Config():
     episodic = True
     training_freq = 4
     model_save_freq = 1_000_000
-    game = "pong"
+    game = "breakout"
     exp_id = "baseline"
