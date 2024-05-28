@@ -1,5 +1,5 @@
 class Config():
-    n_steps_train = 8_000_000
+    n_steps_train = 15_000_000
     max_eps = 1
     min_eps = 0.1
     n_eps = 1_000_000
@@ -14,5 +14,5 @@ class Config():
     episodic = True
     training_freq = 4
     model_save_freq = 1_000_000
-    game = "pong"
-    exp_id = "exp-10"
+    game = "breakout"
+    exp_id = "exp-3"
