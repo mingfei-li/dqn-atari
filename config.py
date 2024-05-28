@@ -6,7 +6,7 @@ class Config():
     initial_lr = 2.5e-4
     lr_half_life = 1_000_000
     target_update_freq = 1_000
-    batch_size = 32
+    batch_size = 96
     gamma = 0.99
     learning_start = 100_000
     buffer_size = 1_000_000
@@ -15,4 +15,4 @@ class Config():
     training_freq = 4
     model_save_freq = 1_000_000
     game = "pong"
-    exp_id = "exp-8"
+    exp_id = "exp-9"
