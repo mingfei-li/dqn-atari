@@ -1,9 +1,9 @@
 class Config():
-    n_steps_train = 5_000_000
+    n_steps_train = 9_000_000
     max_eps = 1
     min_eps = 0.1
     n_eps = 5_000_000
-    initial_lr = 7.5e-5
+    initial_lr = 2.5e-4
     lr_half_life = 1_000_000
     target_update_freq = 1_000
     batch_size = 96
@@ -14,5 +14,5 @@ class Config():
     episodic = True
     training_freq = 4
     model_save_freq = 1_000_000
-    game = "pong"
-    exp_id = "baseline"
+    game = "breakout"
+    exp_id = "exp-2"
