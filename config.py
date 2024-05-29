@@ -4,7 +4,7 @@ class Config():
     min_eps = 0.1
     n_eps = 1_000_000
     initial_lr = 2.5e-4
-    lr_half_life = 1_000_000
+    lr_half_life = 2_000_000
     target_update_freq = 1_000
     batch_size = 96
     gamma = 0.99
@@ -15,4 +15,4 @@ class Config():
     training_freq = 4
     model_save_freq = 1_000_000
     game = "breakout"
-    exp_id = "exp-3"
+    exp_id = "exp-4"
