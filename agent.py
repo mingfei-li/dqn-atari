@@ -33,7 +33,7 @@ class Agent():
             lr=config.initial_lr,
         )
         half_life_iters = config.lr_half_life / config.training_freq
-        self.lr_schedule = torch.optim.lr_scheduler.ExponentialLR(
+        self.lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(
             optimizer=self.optimizer,
             gamma=0.5**(1.0/half_life_iters),
         )
@@ -124,7 +124,7 @@ class Agent():
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        self.lr_schedule.step()
+        self.lr_scheduler.step()
 
         if t % self.config.target_update_freq == 0:
             self.target_network.load_state_dict(self.policy_network.state_dict())
@@ -141,7 +141,7 @@ class Agent():
         self.training_logger.add_step_stats("loss", loss.item())
         self.training_logger.add_step_stats(
             "lr",
-            self.lr_schedule.get_last_lr()[0],
+            self.lr_scheduler.get_last_lr()[0],
         )
         
     def eval(self, t):
