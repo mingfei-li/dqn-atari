@@ -69,8 +69,8 @@ class Agent():
                 self.training_logger.add_step_stats("q_a", q[action].item())
 
             obs, reward, terminated, truncated, _ = self.env.step(action)
-            if reward != 0:
-                reward = reward / abs(reward)
+            # if reward != 0:
+            #     reward = reward / abs(reward)
             done = terminated or truncated
             self.replay_buffer.add_action(action)
             self.replay_buffer.add_reward(reward)
