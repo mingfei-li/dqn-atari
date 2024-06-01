@@ -119,7 +119,7 @@ class Agent():
         q = self.policy_network(states)
         q_a = torch.gather(q, 1, actions.unsqueeze(dim=1)).squeeze(dim=1)
 
-        loss = nn.MSELoss()(q_a, targets)
+        loss = nn.HuberLoss()(q_a, targets)
 
         self.optimizer.zero_grad()
         loss.backward()
