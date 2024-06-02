@@ -15,4 +15,4 @@ class Config():
     training_freq = 4
     model_save_freq = 1_000_000
     game = "breakout"
-    exp_id = "exp-15"
+    exp_id = "exp-16"
