@@ -56,7 +56,8 @@ class Agent():
     def train(self):
         episode_reward = 0
         episode_len = 0
-        obs, _ = self.env.reset()
+        obs, info = self.env.reset()
+        life_count = info.get('lives')
         for t in tqdm(range(self.config.n_steps_train), desc=f"Run {self.run_id}"):
             state = self.replay_buffer.get_state_for_new_obs(obs)
             if random.random() < self.eps or t < self.config.learning_start:
@@ -68,10 +69,16 @@ class Agent():
                 action = torch.argmax(q, dim=0).item()
                 self.training_logger.add_step_stats("q_a", q[action].item())
 
-            obs, reward, terminated, truncated, _ = self.env.step(action)
+            obs, reward, terminated, truncated, info = self.env.step(action)
             if reward != 0:
                 reward = reward / abs(reward)
-            done = terminated or truncated
+            new_life_count = info.get('lives')
+            if new_life_count is not None and new_life_count < life_count:
+                lost_life = True
+                life_count = new_life_count
+            else:
+                lost_life = False
+            done = terminated or truncated or lost_life
             self.replay_buffer.add_action(action)
             self.replay_buffer.add_reward(reward)
             self.replay_buffer.add_done(done)
@@ -87,7 +94,7 @@ class Agent():
             episode_reward += reward
             episode_len += 1
 
-            if done:
+            if terminated or truncated:
                 self.training_logger.add_episode_stats(
                     "training_reward",
                     episode_reward,
@@ -99,8 +106,8 @@ class Agent():
                 self.training_logger.flush(t)
                 episode_reward = 0
                 episode_len = 0
-                obs, _ = self.env.reset()
-                done = False
+                obs, info = self.env.reset()
+                life_count = info.get('lives')
 
     def train_step(self, t):
         states, actions, rewards, dones, next_states = (
@@ -153,8 +160,7 @@ class Agent():
             self.device,
         )
         obs, _ = self.env.reset()
-        done = False
-        while not done:
+        while True:
             if random.random() < 0.01:
                 action = self.env.action_space.sample()
             else:
@@ -165,9 +171,10 @@ class Agent():
                 action = torch.argmax(q, dim=0).item()
 
             obs, reward, terminated, truncated, _ = self.env.step(action)
-            done = terminated or truncated
             episode_reward += reward
             episode_len += 1
+            if terminated or truncated:
+                break
 
         if episode_reward > self.max_reward:
             self.max_reward = episode_reward
