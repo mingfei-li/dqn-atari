@@ -7,7 +7,7 @@ class Config():
     lr_half_life = 1_000_000
     target_update_freq = 1_000
     batch_size = 96
-    gamma = 0.99
+    gamma = 0.9999
     learning_start = 100_000
     buffer_size = 1_000_000
     eval_freq = 10_000
@@ -15,4 +15,4 @@ class Config():
     training_freq = 4
     model_save_freq = 1_000_000
     game = "breakout"
-    exp_id = "exp-22"
+    exp_id = "exp-23"

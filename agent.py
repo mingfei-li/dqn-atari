@@ -78,7 +78,7 @@ class Agent():
                 life_count = new_life_count
             else:
                 lost_life = False
-            done = terminated or truncated or lost_life
+            done = terminated or truncated# or lost_life
             self.replay_buffer.add_action(action)
             self.replay_buffer.add_reward(reward)
             self.replay_buffer.add_done(done)
