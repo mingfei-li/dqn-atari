@@ -18,8 +18,12 @@ class Agent():
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.config = config
         self.eps = config.max_eps
-        self.eps_decay = (config.min_eps/config.max_eps) ** (1.0 / config.n_eps)
-        # self.eps_step = (config.max_eps-config.min_eps) / config.n_eps
+        if config.eps_schedule == 'linear':
+            self.eps_step = (config.max_eps-config.min_eps) / config.n_eps
+        elif config.eps_schedule == 'exponential':
+            self.eps_decay = (config.min_eps/config.max_eps) ** (1.0 / config.n_eps)
+        else:
+            raise
         self.max_reward = -math.inf
 
         self.policy_network = CNN(
@@ -90,8 +94,12 @@ class Agent():
             if t % self.config.eval_freq == 0:
                 self.eval(t)
 
-            self.eps = max(self.eps*self.eps_decay, self.config.min_eps)
-            # self.eps = max(self.eps-self.eps_step, self.config.min_eps)
+            if self.config.eps_schedule == 'linear':
+                self.eps = max(self.eps-self.eps_step, self.config.min_eps)
+            elif self.config.eps_schedule == 'exponential':
+                self.eps = max(self.eps*self.eps_decay, self.config.min_eps)
+            else:
+                raise
             self.training_logger.add_step_stats("eps", self.eps)
             episode_reward += reward
             episode_len += 1
