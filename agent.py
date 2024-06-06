@@ -21,11 +21,9 @@ class Agent():
         if config.eps_schedule == 'linear':
             self.eps_step = (config.max_eps-config.min_eps) / config.n_eps
         elif config.eps_schedule == 'exponential':
-            self.eps_decay = (config.min_eps/config.max_eps) ** (1.0/config.n_eps)
+            self.eps_decay = (config.min_eps/config.max_eps) ** (1.0 / config.n_eps)
         else:
             raise
-        self.lr = config.max_lr
-        self.lr_decay = (config.min_lr/config.max_lr) ** (1.0/config.n_lr)
         self.max_reward = -math.inf
 
         self.policy_network = CNN(
@@ -34,6 +32,16 @@ class Agent():
         self.target_network = CNN(
             output_units=self.env.action_space.n,
         ).to(self.device)
+
+        self.optimizer = torch.optim.Adam(
+            params=self.policy_network.parameters(),
+            lr=config.initial_lr,
+        )
+        half_life_iters = config.lr_half_life / config.training_freq
+        self.lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(
+            optimizer=self.optimizer,
+            gamma=0.5**(1.0/half_life_iters),
+        )
 
         self.target_network.load_state_dict(self.policy_network.state_dict())
         self.save_model("model-initial.pt")
@@ -92,9 +100,7 @@ class Agent():
                 self.eps = max(self.eps*self.eps_decay, self.config.min_eps)
             else:
                 raise
-            self.lr = max(self.lr*self.lr_decay, self.config.min_lr)
             self.training_logger.add_step_stats("eps", self.eps)
-            self.training_logger.add_step_stats("lr", self.lr)
             episode_reward += reward
             episode_len += 1
 
@@ -131,14 +137,11 @@ class Agent():
         q_a = torch.gather(q, 1, actions.unsqueeze(dim=1)).squeeze(dim=1)
 
         loss = nn.HuberLoss()(q_a, targets)
-        optimizer = torch.optim.Adam(
-            params=self.policy_network.parameters(),
-            lr=self.lr,
-        )
 
-        optimizer.zero_grad()
+        self.optimizer.zero_grad()
         loss.backward()
-        optimizer.step()
+        self.optimizer.step()
+        self.lr_scheduler.step()
 
         if t % self.config.target_update_freq == 0:
             self.target_network.load_state_dict(self.policy_network.state_dict())
@@ -153,6 +156,10 @@ class Agent():
         grad_norm = grad_norm ** 0.5
         self.training_logger.add_step_stats("grad_norm", grad_norm)
         self.training_logger.add_step_stats("loss", loss.item())
+        self.training_logger.add_step_stats(
+            "lr",
+            self.lr_scheduler.get_last_lr()[0],
+        )
         
     def eval(self, t):
         episode_reward = 0
