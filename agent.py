@@ -126,15 +126,15 @@ class Agent():
             tq_max *= 1 - dones.int()
         targets = rewards + self.config.gamma * tq_max
 
-        self.policy_network.train()
-        q = self.policy_network(states)
-        q_a = torch.gather(q, 1, actions.unsqueeze(dim=1)).squeeze(dim=1)
-
-        loss = nn.HuberLoss()(q_a, targets)
         optimizer = torch.optim.Adam(
             params=self.policy_network.parameters(),
             lr=self.lr,
         )
+
+        self.policy_network.train()
+        q = self.policy_network(states)
+        q_a = torch.gather(q, 1, actions.unsqueeze(dim=1)).squeeze(dim=1)
+        loss = nn.HuberLoss()(q_a, targets)
 
         optimizer.zero_grad()
         loss.backward()
