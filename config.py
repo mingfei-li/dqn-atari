@@ -1,5 +1,5 @@
 class Config():
-    n_steps_train = 20_000_000
+    n_steps_train = 50_000_000
     max_eps = 1
     min_eps = 0.1
     n_eps = 1_000_000
