@@ -4,8 +4,10 @@ class Config():
     min_eps = 0.01
     n_eps = 2_000_000
     eps_schedule = 'exponential'
-    initial_lr = 7.5e-5
-    lr_half_life = 2_000_000
+    max_lr = 7.5e-5
+    min_lr = 7.5e-6
+    n_lr = 2_000_000
+    lr_schedule = 'exponential'
     target_update_freq = 10_000
     batch_size = 96
     gamma = 0.99
