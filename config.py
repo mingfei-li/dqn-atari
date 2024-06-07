@@ -1,14 +1,14 @@
 class Config():
-    n_steps_train = 50_000_000
+    n_steps_train = 5_000_000
     max_eps = 1
-    min_eps = 0.01
-    n_eps = 2_000_000
-    eps_schedule = 'exponential'
+    min_eps = 0.1
+    n_eps = 1_000_000
+    eps_schedule = 'linear'
     max_lr = 7.5e-5
     min_lr = 7.5e-6
-    n_lr = 10_000_000
-    lr_schedule = 'exponential'
-    target_update_freq = 40_000
+    n_lr = 5_000_000
+    lr_schedule = 'linear'
+    target_update_freq = 10_000
     batch_size = 96
     gamma = 0.99
     learning_start = 100_000
@@ -17,5 +17,4 @@ class Config():
     episodic = True
     training_freq = 4
     model_save_freq = 1_000_000
-    game = "breakout"
-    exp_id = "exp-46"
+    exp_id = "pong:exp-11"

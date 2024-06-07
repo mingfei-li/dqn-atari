@@ -4,6 +4,7 @@ import gymnasium as gym
 from gymnasium.experimental.wrappers import AtariPreprocessingV0
 import numpy as np
 import random
+import sys
 import torch
 
 def set_seed(seed):
@@ -16,9 +17,13 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python train.py <game>")
+        sys.exit(1)
+    game = sys.argv[1]
     config = Config()
     env = gym.make(
-        f'{config.game.capitalize()}NoFrameskip-v4',
+        f'{game.capitalize()}NoFrameskip-v4',
         render_mode="rgb_array",
     )
     env = AtariPreprocessingV0(env)
