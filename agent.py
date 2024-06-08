@@ -24,7 +24,6 @@ class Agent():
             self.eps_decay = (config.min_eps/config.max_eps) ** (1.0 / config.n_eps)
         else:
             raise
-        self.max_reward = -math.inf
 
         self.policy_network = CNN(
             output_units=self.env.action_space.n,
@@ -103,7 +102,8 @@ class Agent():
                 self.train_step(t)
 
             if t % self.config.eval_freq == 0:
-                self.eval(t)
+                self.eval(t, 0.01)
+                self.eval(t, 0.05)
 
             if self.config.eps_schedule == 'linear':
                 self.eps = max(self.eps-self.eps_step, self.config.min_eps)
@@ -172,7 +172,7 @@ class Agent():
             self.lr_scheduler.get_last_lr()[0],
         )
         
-    def eval(self, t):
+    def eval(self, t, eps):
         episode_reward = 0
         episode_len = 0
         buffer = ReplayBuffer(
@@ -182,7 +182,7 @@ class Agent():
         )
         obs, _ = self.env.reset()
         while True:
-            if random.random() < 0.01:
+            if random.random() < eps:
                 action = self.env.action_space.sample()
             else:
                 state = buffer.get_state_for_new_obs(obs)
@@ -197,12 +197,8 @@ class Agent():
             if terminated or truncated:
                 break
 
-        if episode_reward > self.max_reward:
-            self.max_reward = episode_reward
-            self.save_model(f"model-record-{episode_reward}-{t}.pt")
-
-        self.eval_logger.add_episode_stats("eval_reward", episode_reward)
-        self.eval_logger.add_episode_stats("eval_episode_len", episode_len)
+        self.eval_logger.add_episode_stats(f"eval_reward_{eps:.2f}", episode_reward)
+        self.eval_logger.add_episode_stats(f"eval_episode_len_{eps:.2f}", episode_len)
         self.eval_logger.flush(t)
 
     def save_model(self, model_name):
