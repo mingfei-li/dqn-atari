@@ -69,12 +69,12 @@ class Agent():
             f"results/{config.exp_id}/{run_id}/logs/eval",
         )
 
-    def train(self):
+    def train(self, n_training_steps):
         episode_reward = 0
         episode_len = 0
         obs, info = self.env.reset()
         life_count = info.get('lives')
-        for t in tqdm(range(self.config.n_steps_train), desc=f"Run {self.run_id}"):
+        for t in tqdm(range(n_training_steps), desc=f"Run {self.run_id}"):
             state = self.replay_buffer.get_state_for_new_obs(obs)
             if random.random() < self.eps or t < self.config.learning_start:
                 action = self.env.action_space.sample()
@@ -94,7 +94,7 @@ class Agent():
                 life_count = new_life_count
             else:
                 lost_life = False
-            done = terminated or truncated or lost_life
+            done = terminated or truncated# or lost_life
             self.replay_buffer.add_action(action)
             self.replay_buffer.add_reward(reward)
             self.replay_buffer.add_done(done)

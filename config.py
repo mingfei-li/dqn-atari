@@ -1,5 +1,4 @@
 class Config():
-    n_steps_train = 5_000_000
     max_eps = 1
     min_eps = 0.1
     n_eps = 1_000_000
@@ -17,4 +16,4 @@ class Config():
     episodic = True
     training_freq = 4
     model_save_freq = 1_000_000
-    exp_id = "pong:exp-11"
+    exp_id = "breakout:exp-47"
