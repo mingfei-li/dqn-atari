@@ -16,4 +16,4 @@ class Config():
     episodic = True
     training_freq = 4
     model_save_freq = 1_000_000
-    exp_id = "breakout:exp-48"
+    exp_id = "breakout:exp-49"
