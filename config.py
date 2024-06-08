@@ -7,7 +7,7 @@ class Config():
     min_lr = 7.5e-6
     n_lr = 5_000_000
     lr_schedule = 'linear'
-    target_update_freq = 10_000
+    target_update_freq = 2_000
     batch_size = 96
     gamma = 0.99
     learning_start = 100_000
@@ -16,4 +16,4 @@ class Config():
     episodic = True
     training_freq = 4
     model_save_freq = 1_000_000
-    exp_id = "breakout:exp-47"
+    exp_id = "breakout:exp-48"
