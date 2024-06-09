@@ -2,12 +2,10 @@ class Config():
     max_eps = 1
     min_eps = 0.1
     n_eps = 1_000_000
-    eps_schedule = 'linear'
     max_lr = 7.5e-5
     min_lr = 7.5e-6
     n_lr = 5_000_000
-    lr_schedule = 'linear'
-    target_update_freq = 2_000
+    target_update_freq = 10_000
     batch_size = 96
     gamma = 0.99
     learning_start = 100_000
@@ -16,4 +14,4 @@ class Config():
     episodic = True
     training_freq = 4
     model_save_freq = 1_000_000
-    exp_id = "breakout:exp-49"
+    exp_id = "baseline"

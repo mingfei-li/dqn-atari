@@ -2,28 +2,30 @@ from models.cnn import CNN
 from utils.logger import Logger
 from utils.replay_buffer import ReplayBuffer
 from tqdm import tqdm
-import math
+from gymnasium.experimental.wrappers import AtariPreprocessingV0
+import gymnasium as gym
 import random
 import torch
 import torch.nn as nn
 import os
 
 class Agent():
-    def __init__(self, env, config, run_id):
-        self.env = env
+    def __init__(self, config, game, run_id, n_training_steps):
+        self.game = game
+        self.run_id = run_id
+        self.n_training_steps = n_training_steps
+
+        self.env = AtariPreprocessingV0(gym.make(
+            f'{game}NoFrameskip-v4',
+            render_mode="rgb_array",
+        ))
         self.env.reset(seed=run_id)
         self.env.action_space.seed(run_id)
-        self.run_id = run_id
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.config = config
         self.eps = config.max_eps
-        if config.eps_schedule == 'linear':
-            self.eps_step = (config.max_eps-config.min_eps) / config.n_eps
-        elif config.eps_schedule == 'exponential':
-            self.eps_decay = (config.min_eps/config.max_eps) ** (1.0 / config.n_eps)
-        else:
-            raise
+        self.eps_step = (config.max_eps-config.min_eps) / config.n_eps
 
         self.policy_network = CNN(
             output_units=self.env.action_space.n,
@@ -37,21 +39,12 @@ class Agent():
             lr=config.max_lr,
         )
 
-        if config.lr_schedule == 'linear':
-            self.lr_scheduler = torch.optim.lr_scheduler.LinearLR(
-                optimizer=self.optimizer,
-                start_factor=1.0,
-                end_factor=config.min_lr/config.max_lr,
-                total_iters=config.n_lr/config.training_freq,
-            )
-        elif config.lr_schedule == 'exponential':
-            n_iters = config.n_lr / config.training_freq
-            self.lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(
-                optimizer=self.optimizer,
-                gamma=(config.min_lr/config.max_lr)**(1.0/n_iters),
-            )
-        else:
-            raise
+        self.lr_scheduler = torch.optim.lr_scheduler.LinearLR(
+            optimizer=self.optimizer,
+            start_factor=1.0,
+            end_factor=config.min_lr/config.max_lr,
+            total_iters=config.n_lr/config.training_freq,
+        )
 
         self.target_network.load_state_dict(self.policy_network.state_dict())
         self.save_model("model-initial.pt")
@@ -63,17 +56,20 @@ class Agent():
         )
 
         self.training_logger = Logger(
-            f"results/{config.exp_id}/{run_id}/logs/training")
+            f"results/{self.game}/{config.exp_id}/{run_id}/logs/training")
         self.eval_logger = Logger(
-            f"results/{config.exp_id}/{run_id}/logs/eval",
+            f"results/{self.game}/{config.exp_id}/{run_id}/logs/eval",
         )
 
-    def train(self, n_training_steps):
+    def __del__(self):
+        self.env.close()
+
+    def train(self):
         episode_reward = 0
         episode_len = 0
         obs, info = self.env.reset()
         life_count = info.get('lives')
-        for t in tqdm(range(n_training_steps), desc=f"Run {self.run_id}"):
+        for t in tqdm(range(self.n_training_steps), desc=f"Run {self.run_id}"):
             state = self.replay_buffer.get_state_for_new_obs(obs)
             if random.random() < self.eps or t < self.config.learning_start:
                 action = self.env.action_space.sample()
@@ -105,12 +101,7 @@ class Agent():
                 self.eval(t, 0.01)
                 self.eval(t, 0.05)
 
-            if self.config.eps_schedule == 'linear':
-                self.eps = max(self.eps-self.eps_step, self.config.min_eps)
-            elif self.config.eps_schedule == 'exponential':
-                self.eps = max(self.eps*self.eps_decay, self.config.min_eps)
-            else:
-                raise
+            self.eps = max(self.eps-self.eps_step, self.config.min_eps)
             self.training_logger.add_step_stats("eps", self.eps)
             episode_reward += reward
             episode_len += 1
@@ -202,7 +193,7 @@ class Agent():
         self.eval_logger.flush(t)
 
     def save_model(self, model_name):
-        path = f"results/{self.config.exp_id}/{self.run_id}/models"
+        path = f"results/{self.game}/{self.config.exp_id}/{self.run_id}/models"
         if not os.path.exists(path):
             os.makedirs(path)
 

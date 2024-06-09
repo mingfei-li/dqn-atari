@@ -1,7 +1,5 @@
 from agent import Agent
 from config import Config
-import gymnasium as gym
-from gymnasium.experimental.wrappers import AtariPreprocessingV0
 import numpy as np
 import random
 import sys
@@ -20,17 +18,15 @@ if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python train.py <game> <number of training steps (in millions)>")
         sys.exit(1)
-    game = sys.argv[1]
+    game = sys.argv[1].capitalize()
     n_million_training_steps = int(sys.argv[2])
     config = Config()
-    env = gym.make(
-        f'{game.capitalize()}NoFrameskip-v4',
-        render_mode="rgb_array",
-    )
-    env = AtariPreprocessingV0(env)
+
     for run_id in [0, 42, 1234, 9999, 11111]:
         set_seed(run_id)
-        agent = Agent(env, config, run_id)
-        agent.train(n_million_training_steps * 1_000_000)
-
-    env.close()
+        Agent(
+            config,
+            game,
+            run_id,
+            n_million_training_steps * 1_000_000,
+        ).train()
