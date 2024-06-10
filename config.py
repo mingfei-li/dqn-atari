@@ -7,11 +7,11 @@ class Config():
     n_lr = 5_000_000
     target_update_freq = 10_000
     batch_size = 96
-    gamma = 0.99
+    gamma = 0.9999
     learning_start = 100_000
     buffer_size = 1_000_000
     eval_freq = 10_000
     episodic = True
     training_freq = 4
     model_save_freq = 500_000
-    exp_id = "default"
+    exp_id = "exp-50"
