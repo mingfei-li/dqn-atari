@@ -120,6 +120,8 @@ class Agent():
                 episode_len = 0
                 obs, info = self.env.reset()
                 life_count = info.get('lives')
+        
+        self.save_model(f"model-final-{t}.pt")
 
     def train_step(self, t):
         states, actions, rewards, dones, next_states = (
