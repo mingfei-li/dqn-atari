@@ -13,5 +13,5 @@ class Config():
     eval_freq = 10_000
     episodic = True
     training_freq = 4
-    model_save_freq = 1_000_000
-    exp_id = "baseline"
+    model_save_freq = 500_000
+    exp_id = "default"
