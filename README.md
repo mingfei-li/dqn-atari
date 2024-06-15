@@ -11,7 +11,7 @@ Here, testing reward (labeled as eval_reward_0.05.avg in the reference charts be
 *Pong: metrics for 6 million training steps*
 ![Pong Reference](images/pong-ref.png)
 
-*Breakout: metrics for 6 million training steps*
+*Breakout: metrics for 60 million training steps*
 ![Breakout Reference](images/breakout-ref.png)
 
 ## Usage
