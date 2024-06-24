@@ -31,5 +31,5 @@ Use a trained model to play a game
 $ python play.py <game> <path_to_model>
 ```
 
-## References
+## Reference Results
 The `references` directory contains the tensorboard log files, models, and video recordings from the 6 million step training for Pong and 60 million step training for Breakout using the default config in `config.py`.
